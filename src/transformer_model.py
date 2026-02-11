@@ -353,14 +353,25 @@ class TacticsTransformer(keras.Model):
         """
         Creates causal (look-ahead) mask for decoder to prevent attending to future tokens.
         
+        Returns a lower triangular matrix where:
+        - 1.0 = position can be attended to (current and past)
+        - 0.0 = position should be masked (future)
+        
+        Example for size=4:
+        [[1, 0, 0, 0],   # Token 0 can only see itself
+         [1, 1, 0, 0],   # Token 1 can see tokens 0-1
+         [1, 1, 1, 0],   # Token 2 can see tokens 0-2
+         [1, 1, 1, 1]]   # Token 3 can see tokens 0-3
+        
         Args:
             size: Sequence length
             
         Returns:
-            Boolean mask of shape (size, size)
+            Boolean mask of shape (size, size) compatible with Keras MultiHeadAttention
         """
+        # band_part(ones, -1, 0) creates lower triangular matrix (correct for causal masking)
         mask = tf.linalg.band_part(tf.ones((size, size)), -1, 0)
-        return mask  # 1 for positions to keep, 0 for positions to mask
+        return mask  # 1 = keep (attend), 0 = mask (don't attend)
     
     def create_padding_mask(self, seq: tf.Tensor) -> tf.Tensor:
         """
@@ -467,7 +478,9 @@ class TacticsTransformer(keras.Model):
         dec_target_padding_mask = self.create_padding_mask(tar)
         
         # Combine look-ahead and padding masks
-        # Use minimum to combine (0 = mask, 1 = keep)
+        # Both masks use convention: 1 = attend, 0 = mask
+        # tf.minimum ensures position is attended to ONLY if both masks allow it
+        # Example: If either the position is padding OR it's a future token, mask it
         combined_mask = tf.minimum(dec_target_padding_mask, look_ahead_mask)
         
         # Encode

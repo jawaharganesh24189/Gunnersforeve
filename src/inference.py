@@ -207,19 +207,22 @@ class TacticsGenerator:
                 predictions = self.model((input_seq, dec_input), training=False)
                 
                 # Get the last token prediction
-                last_token_logits = predictions[:, -1, :].numpy()[0]
+                last_token_logits = predictions[:, -1, :]
                 
                 # Convert to log probabilities
-                log_probs = tf.nn.log_softmax(last_token_logits).numpy()
+                log_probs = tf.nn.log_softmax(last_token_logits)[0]
                 
-                # Get top k candidates for this beam
-                top_k_indices = np.argsort(log_probs)[-beam_width:]
+                # Get top k candidates efficiently using tf.nn.top_k
+                # This is much faster than np.argsort and can leverage GPU
+                top_k_log_probs, top_k_indices = tf.nn.top_k(log_probs, k=beam_width)
                 
                 # Create new candidate beams
-                for token_id in top_k_indices:
-                    new_seq = seq + [int(token_id)]
-                    # Add log probability (negative because we want to maximize)
-                    new_score = score + log_probs[token_id]
+                for i in range(beam_width):
+                    token_id = int(top_k_indices[i].numpy())
+                    token_log_prob = float(top_k_log_probs[i].numpy())
+                    new_seq = seq + [token_id]
+                    # Add log probability
+                    new_score = score + token_log_prob
                     all_candidates.append((new_seq, new_score))
             
             # If no candidates, break

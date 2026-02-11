@@ -74,7 +74,8 @@ def masked_loss(real: tf.Tensor, pred: tf.Tensor, pad_token_id: int = 0) -> tf.T
     loss *= mask
     
     # Return mean loss over non-padding tokens
-    return tf.reduce_sum(loss) / (tf.reduce_sum(mask) + 1e-8)  # Add epsilon to avoid division by zero
+    # Use keras.backend.epsilon() for better numerical stability
+    return tf.reduce_sum(loss) / (tf.reduce_sum(mask) + keras.backend.epsilon())
 
 
 def masked_accuracy(real: tf.Tensor, pred: tf.Tensor, pad_token_id: int = 0) -> tf.Tensor:
@@ -96,7 +97,8 @@ def masked_accuracy(real: tf.Tensor, pred: tf.Tensor, pad_token_id: int = 0) -> 
     accuracies = tf.cast(accuracies, dtype=tf.float32)
     
     # Return mean accuracy over non-padding tokens
-    return tf.reduce_sum(accuracies * mask) / (tf.reduce_sum(mask) + 1e-8)
+    # Use keras.backend.epsilon() for better numerical stability
+    return tf.reduce_sum(accuracies * mask) / (tf.reduce_sum(mask) + keras.backend.epsilon())
 
 
 def train_model(
