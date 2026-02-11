@@ -34,6 +34,13 @@ class CustomSchedule(keras.optimizers.schedules.LearningRateSchedule):
         arg1 = tf.math.rsqrt(step)
         arg2 = step * (self.warmup_steps ** -1.5)
         return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
+    
+    def get_config(self):
+        """Return configuration for serialization."""
+        return {
+            'd_model': float(self.d_model.numpy()),
+            'warmup_steps': self.warmup_steps
+        }
 
 
 def masked_loss(real, pred):
@@ -57,7 +64,8 @@ def masked_accuracy(real, pred):
     Masked accuracy metric that ignores padding tokens.
     """
     mask = tf.math.logical_not(tf.math.equal(real, 0))
-    accuracies = tf.equal(real, tf.argmax(pred, axis=2))
+    pred_ids = tf.cast(tf.argmax(pred, axis=2), dtype=real.dtype)
+    accuracies = tf.equal(real, pred_ids)
     
     mask = tf.cast(mask, dtype=tf.float32)
     accuracies = tf.cast(accuracies, dtype=tf.float32)
@@ -364,7 +372,7 @@ def train_model_on_matches(
     )
     
     # Save final model
-    final_model_path = os.path.join(save_dir, 'tactics_transformer_match_data_final.h5')
+    final_model_path = os.path.join(save_dir, 'tactics_transformer_match_data_final.weights.h5')
     model.save_weights(final_model_path)
     print(f"\nModel weights saved to {final_model_path}")
     
