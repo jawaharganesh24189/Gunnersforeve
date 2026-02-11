@@ -68,6 +68,10 @@ TEAMS_DATABASE: Dict[str, TeamAttributes] = {
     "Tottenham": TeamAttributes("Tottenham", League.PREMIER_LEAGUE, 84, 76, 68, 78, "4-2-3-1"),
     "Newcastle": TeamAttributes("Newcastle", League.PREMIER_LEAGUE, 78, 82, 62, 75, "4-3-3"),
     "Brighton": TeamAttributes("Brighton", League.PREMIER_LEAGUE, 76, 74, 72, 80, "4-2-3-1"),
+    "Aston Villa": TeamAttributes("Aston Villa", League.PREMIER_LEAGUE, 79, 76, 66, 75, "4-2-3-1"),
+    "West Ham": TeamAttributes("West Ham", League.PREMIER_LEAGUE, 74, 75, 58, 72, "4-2-3-1"),
+    "Fulham": TeamAttributes("Fulham", League.PREMIER_LEAGUE, 73, 72, 64, 70, "4-2-3-1"),
+    "Brentford": TeamAttributes("Brentford", League.PREMIER_LEAGUE, 75, 71, 60, 76, "3-5-2"),
     
     # Serie A
     "Juventus": TeamAttributes("Juventus", League.SERIE_A, 84, 88, 68, 72, "3-5-2"),
@@ -78,6 +82,10 @@ TEAMS_DATABASE: Dict[str, TeamAttributes] = {
     "Lazio": TeamAttributes("Lazio", League.SERIE_A, 81, 77, 64, 74, "4-3-3"),
     "Atalanta": TeamAttributes("Atalanta", League.SERIE_A, 85, 72, 70, 88, "3-4-3"),
     "Fiorentina": TeamAttributes("Fiorentina", League.SERIE_A, 77, 75, 68, 71, "4-3-3"),
+    "Bologna": TeamAttributes("Bologna", League.SERIE_A, 76, 74, 65, 73, "4-3-3"),
+    "Torino": TeamAttributes("Torino", League.SERIE_A, 74, 76, 62, 71, "3-5-2"),
+    "Sassuolo": TeamAttributes("Sassuolo", League.SERIE_A, 75, 70, 67, 72, "4-3-3"),
+    "Udinese": TeamAttributes("Udinese", League.SERIE_A, 73, 73, 59, 70, "3-5-2"),
     
     # Ligue 1
     "Paris Saint-Germain": TeamAttributes("Paris Saint-Germain", League.LIGUE_1, 91, 82, 75, 78, "4-3-3"),
@@ -88,6 +96,10 @@ TEAMS_DATABASE: Dict[str, TeamAttributes] = {
     "Rennes": TeamAttributes("Rennes", League.LIGUE_1, 76, 74, 67, 75, "4-3-3"),
     "Nice": TeamAttributes("Nice", League.LIGUE_1, 75, 78, 64, 73, "4-4-2"),
     "Lens": TeamAttributes("Lens", League.LIGUE_1, 77, 76, 66, 79, "3-4-3"),
+    "Toulouse": TeamAttributes("Toulouse", League.LIGUE_1, 72, 74, 61, 71, "3-4-3"),
+    "Montpellier": TeamAttributes("Montpellier", League.LIGUE_1, 73, 72, 63, 70, "4-2-3-1"),
+    "Strasbourg": TeamAttributes("Strasbourg", League.LIGUE_1, 74, 73, 62, 72, "3-5-2"),
+    "Nantes": TeamAttributes("Nantes", League.LIGUE_1, 71, 74, 60, 69, "4-4-2"),
     
     # La Liga
     "Real Madrid": TeamAttributes("Real Madrid", League.LA_LIGA, 91, 86, 72, 80, "4-3-3"),
@@ -98,6 +110,10 @@ TEAMS_DATABASE: Dict[str, TeamAttributes] = {
     "Real Betis": TeamAttributes("Real Betis", League.LA_LIGA, 77, 74, 71, 74, "4-2-3-1"),
     "Villarreal": TeamAttributes("Villarreal", League.LA_LIGA, 78, 79, 69, 73, "4-4-2"),
     "Athletic Bilbao": TeamAttributes("Athletic Bilbao", League.LA_LIGA, 75, 78, 65, 80, "4-2-3-1"),
+    "Valencia": TeamAttributes("Valencia", League.LA_LIGA, 76, 76, 66, 72, "4-4-2"),
+    "Celta Vigo": TeamAttributes("Celta Vigo", League.LA_LIGA, 74, 73, 64, 71, "4-1-4-1"),
+    "Osasuna": TeamAttributes("Osasuna", League.LA_LIGA, 72, 77, 58, 75, "4-3-3"),
+    "Getafe": TeamAttributes("Getafe", League.LA_LIGA, 70, 79, 55, 76, "5-3-2"),
     
     # Bundesliga
     "Bayern Munich": TeamAttributes("Bayern Munich", League.BUNDESLIGA, 93, 84, 78, 87, "4-2-3-1"),
@@ -108,6 +124,10 @@ TEAMS_DATABASE: Dict[str, TeamAttributes] = {
     "Eintracht Frankfurt": TeamAttributes("Eintracht Frankfurt", League.BUNDESLIGA, 79, 76, 66, 81, "3-4-2-1"),
     "Wolfsburg": TeamAttributes("Wolfsburg", League.BUNDESLIGA, 76, 78, 64, 74, "4-2-3-1"),
     "Freiburg": TeamAttributes("Freiburg", League.BUNDESLIGA, 75, 79, 63, 76, "3-4-3"),
+    "Borussia Monchengladbach": TeamAttributes("Borussia Monchengladbach", League.BUNDESLIGA, 77, 75, 65, 73, "4-2-3-1"),
+    "Mainz": TeamAttributes("Mainz", League.BUNDESLIGA, 73, 74, 62, 72, "3-5-2"),
+    "Hoffenheim": TeamAttributes("Hoffenheim", League.BUNDESLIGA, 76, 73, 67, 74, "3-4-3"),
+    "Stuttgart": TeamAttributes("Stuttgart", League.BUNDESLIGA, 75, 72, 66, 71, "4-3-3"),
 }
 
 
