@@ -69,7 +69,6 @@ class MatchData:
         """Return total goals in match"""
         return self.home_goals + self.away_goals
     
-    @property
     def is_high_scoring(self, threshold: int = 3) -> bool:
         """Check if match was high-scoring"""
         return self.total_goals >= threshold
