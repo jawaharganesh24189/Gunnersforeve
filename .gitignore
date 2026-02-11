@@ -50,7 +50,9 @@ Thumbs.db
 
 # Jupyter Notebooks
 .ipynb_checkpoints/
+# Exclude all notebooks except the main one
 *.ipynb
+!arsenal_complete_notebook.ipynb
 
 # Logs
 logs/
