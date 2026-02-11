@@ -9,8 +9,13 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from .transformer_model import create_tactics_transformer
-from .data_preprocessing import TacticsEncoder
+try:
+    from .transformer_model import create_tactics_transformer
+    from .data_preprocessing import TacticsEncoder
+except ImportError:
+    # Fall back to direct imports for standalone usage
+    from transformer_model import create_tactics_transformer
+    from data_preprocessing import TacticsEncoder
 
 
 class TacticsGenerator:
@@ -136,6 +141,133 @@ class TacticsGenerator:
             tactics.append(tactic)
         
         return tactics
+    
+    def generate_tactics_beam_search(
+        self,
+        own_formation: str,
+        opponent_formation: str,
+        ball_position: tuple,
+        tactical_context: str,
+        player_positions: list,
+        beam_width: int = 5,
+        length_penalty: float = 1.0
+    ):
+        """
+        Generate passing tactics using beam search for better quality.
+        
+        Beam search explores multiple candidate sequences simultaneously,
+        keeping only the top beam_width candidates at each step based on
+        their cumulative log probabilities.
+        
+        Args:
+            own_formation: Team's formation (e.g., '4-3-3')
+            opponent_formation: Opponent's formation
+            ball_position: (x, y) coordinates of ball
+            tactical_context: Current tactical situation
+            player_positions: List of (position, x, y) for each player
+            beam_width: Number of beams to maintain (higher = better quality, slower)
+            length_penalty: Penalty for longer sequences (1.0 = no penalty)
+        
+        Returns:
+            List of (position, action) tuples representing the best passing sequence
+        """
+        # Encode input situation
+        input_seq = self.encoder.encode_tactical_situation(
+            own_formation,
+            opponent_formation,
+            ball_position,
+            tactical_context,
+            player_positions
+        )
+        
+        # Reshape for model input
+        input_seq = input_seq.reshape(1, -1)
+        
+        # Initialize beams: each beam is (sequence, log_prob)
+        start_token = self.encoder.actions['<START>']
+        end_token = self.encoder.actions['<END>']
+        beams = [([start_token], 0.0)]  # (sequence, cumulative_log_prob)
+        completed_beams = []
+        
+        # Generate sequences
+        for step in range(self.max_length):
+            all_candidates = []
+            
+            # Expand each beam
+            for seq, score in beams:
+                # Skip if this beam has ended
+                if seq[-1] == end_token:
+                    completed_beams.append((seq, score))
+                    continue
+                
+                # Prepare decoder input
+                dec_input = np.array([seq])
+                
+                # Get predictions
+                predictions = self.model((input_seq, dec_input), training=False)
+                
+                # Get the last token prediction
+                last_token_logits = predictions[:, -1, :]
+                
+                # Convert to log probabilities
+                log_probs = tf.nn.log_softmax(last_token_logits)[0]
+                
+                # Get top k candidates efficiently using tf.nn.top_k
+                # This is much faster than np.argsort and can leverage GPU
+                top_k_log_probs, top_k_indices = tf.nn.top_k(log_probs, k=beam_width)
+                
+                # Create new candidate beams
+                for i in range(beam_width):
+                    token_id = int(top_k_indices[i].numpy())
+                    token_log_prob = float(top_k_log_probs[i].numpy())
+                    new_seq = seq + [token_id]
+                    # Add log probability
+                    new_score = score + token_log_prob
+                    all_candidates.append((new_seq, new_score))
+            
+            # If no candidates, break
+            if not all_candidates:
+                break
+            
+            # Select top beam_width candidates
+            # Apply length penalty: score / (length ** length_penalty)
+            scored_candidates = []
+            for seq, score in all_candidates:
+                # Apply length normalization
+                normalized_score = score / (len(seq) ** length_penalty)
+                scored_candidates.append((seq, score, normalized_score))
+            
+            # Sort by normalized score and keep top beam_width
+            scored_candidates.sort(key=lambda x: x[2], reverse=True)
+            beams = [(seq, score) for seq, score, _ in scored_candidates[:beam_width]]
+            
+            # Check if all beams have ended
+            if all(seq[-1] == end_token for seq, _ in beams):
+                completed_beams.extend(beams)
+                break
+        
+        # If we have completed beams, use them; otherwise use current beams
+        if completed_beams:
+            final_beams = completed_beams
+        else:
+            final_beams = beams
+        
+        # Select best sequence based on normalized score
+        best_seq = None
+        best_score = float('-inf')
+        for seq, score in final_beams:
+            normalized_score = score / (len(seq) ** length_penalty)
+            if normalized_score > best_score:
+                best_score = normalized_score
+                best_seq = seq
+        
+        # Decode the best sequence
+        if best_seq:
+            decoded_seq = self.encoder.decode_passing_sequence(np.array(best_seq))
+            return decoded_seq
+        else:
+            # Fallback to empty sequence
+            return []
 
 
 def load_model_for_inference(

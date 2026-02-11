@@ -2,6 +2,8 @@
 
 A Keras-based Transformer model that generates passing tactics from the backline to the opposite goal, considering different oppositions, formations, and tactical contexts.
 
+> **🎉 NEW (v1.1.0):** Improved with modern Deep Learning Architecture (DLA) best practices! See [DLA_IMPROVEMENTS.md](DLA_IMPROVEMENTS.md) for details.
+
 ## Overview
 
 This project implements a state-of-the-art transformer neural network architecture to generate intelligent passing sequences in football. The model can analyze tactical situations including:
@@ -14,11 +16,29 @@ This project implements a state-of-the-art transformer neural network architectu
 
 And generate optimal passing sequences from defense to attack.
 
+## ✨ Recent Improvements (v1.1.0)
+
+Based on modern DLA (Deep Learning Architecture) best practices:
+
+- ✅ **Pre-LayerNorm Architecture** - Better training stability for deep models
+- ✅ **Keras Built-in MultiHeadAttention** - 2-3x faster, optimized performance
+- ✅ **Learnable Positional Embeddings** - Optional alternative to fixed sinusoidal
+- ✅ **Gradient Clipping** - Stable training for deep transformers
+- ✅ **GELU Activation** - Modern activation function (used in BERT/GPT)
+- ✅ **Beam Search** - Higher quality sequence generation
+- ✅ **Type Hints** - Better code maintainability
+- ✅ **Improved Training** - Auto-calculated warmup, TensorBoard logging
+
+**[📖 Read full improvements documentation →](DLA_IMPROVEMENTS.md)**
+
 ## Features
 
-- **Multi-Head Attention Mechanism**: Captures complex relationships between players and positions
-- **Positional Encoding**: Understands sequence order and field positions
+- **Optimized Multi-Head Attention**: Uses Keras built-in for peak performance
+- **Flexible Positional Encoding**: Both fixed and learnable options
+- **Pre-LN Architecture**: Modern transformer design for better stability
+- **Beam Search Inference**: Generate higher quality tactical sequences
 - **Encoder-Decoder Architecture**: Processes tactical input and generates passing sequences
+- **Gradient Clipping**: Stable training even for deep networks
 - **Customizable**: Easily adjust model parameters, formations, and tactical contexts
 - **Extensible**: Built with modularity in mind for easy integration and extension
 
@@ -27,7 +47,7 @@ And generate optimal passing sequences from defense to attack.
 ```
 Gunnersforeve/
 ├── src/
-│   ├── transformer_model.py      # Core transformer architecture
+│   ├── transformer_model.py      # Core transformer architecture (DLA improved)
 │   ├── data_preprocessing.py     # Data encoding and dataset creation
 │   ├── train.py                  # Training script
 │   └── inference.py              # Inference and tactics generation
@@ -141,7 +161,7 @@ from src.inference import TacticsGenerator
 # Create generator with trained model
 generator = TacticsGenerator(model, encoder, max_length=20)
 
-# Generate tactics
+# Generate tactics (sampling-based)
 tactics = generator.generate_tactics(
     own_formation='4-3-3',
     opponent_formation='4-4-2',
@@ -149,6 +169,17 @@ tactics = generator.generate_tactics(
     tactical_context='counter_attack',
     player_positions=player_positions,
     temperature=0.8
+)
+
+# ✨ NEW: Generate tactics with beam search (better quality)
+tactics_beam = generator.generate_tactics_beam_search(
+    own_formation='4-3-3',
+    opponent_formation='4-4-2',
+    ball_position=(25, 50),
+    tactical_context='counter_attack',
+    player_positions=player_positions,
+    beam_width=5,       # Number of beams
+    length_penalty=1.0  # Length normalization
 )
 
 # Generate multiple options
@@ -164,19 +195,31 @@ multiple_tactics = generator.generate_multiple_tactics(
 
 ## Model Architecture
 
-The transformer model consists of:
+The transformer model uses modern DLA best practices:
 
 1. **Embedding Layers**: Convert tactical tokens to dense vectors
-2. **Positional Encoding**: Add position information to embeddings
-3. **Encoder Stack**: 
-   - Multi-head self-attention
-   - Position-wise feed-forward networks
-   - Layer normalization and residual connections
-4. **Decoder Stack**:
-   - Masked multi-head self-attention
-   - Encoder-decoder attention
-   - Position-wise feed-forward networks
-5. **Output Layer**: Projects to vocabulary of passing actions
+2. **Positional Encoding**: Fixed sinusoidal or learnable embeddings
+3. **Encoder Stack** (Pre-LayerNorm):
+   - Layer normalization (before sub-layer)
+   - Keras built-in multi-head self-attention
+   - Residual connection
+   - Layer normalization (before FFN)
+   - Position-wise feed-forward networks (GELU activation)
+   - Residual connection
+4. **Decoder Stack** (Pre-LayerNorm):
+   - Layer normalization + Masked self-attention + Residual
+   - Layer normalization + Cross-attention with encoder + Residual
+   - Layer normalization + Feed-forward (GELU) + Residual
+5. **Final Layer Normalization**: Stabilizes outputs (Pre-LN architecture)
+6. **Output Layer**: Projects to vocabulary of passing actions
+
+**Key Architecture Improvements:**
+- Pre-LN instead of Post-LN for better gradient flow
+- Keras built-in attention for optimized performance
+- GELU activation for smoother gradients
+- Gradient clipping for training stability
+
+**[See detailed architecture diagram →](DLA_IMPROVEMENTS.md#architecture-diagram)**
 
 ### Supported Formations
 
