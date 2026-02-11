@@ -1,0 +1,6 @@
+match_id,date,time,competition,season,home_team,away_team,is_arsenal_home,home_score,away_score,halftime_home_score,halftime_away_score,venue,attendance,home_shots,home_shots_on_target,home_possession,home_corners,home_fouls,home_yellow_cards,home_red_cards,home_xg,away_shots,away_shots_on_target,away_possession,away_corners,away_fouls,away_yellow_cards,away_red_cards,away_xg
+PL_2023_001,2023-08-12,15:00,Premier League,2023-24,Arsenal,Nottingham Forest,true,2,1,1,0,Emirates Stadium,60261,14,6,61.0,5,8,1,0,1.8,8,3,39.0,2,11,2,0,0.9
+PL_2023_002,2023-08-19,15:00,Premier League,2023-24,Crystal Palace,Arsenal,false,0,1,0,0,Selhurst Park,25183,7,2,42.0,3,13,3,0,0.5,12,5,58.0,6,9,1,0,1.6
+PL_2023_003,2023-08-26,17:30,Premier League,2023-24,Arsenal,Fulham,true,2,2,1,1,Emirates Stadium,60298,18,7,64.0,8,7,0,0,2.4,10,5,36.0,3,10,2,0,1.3
+PL_2023_004,2023-09-03,16:30,Premier League,2023-24,Manchester United,Arsenal,false,1,3,0,2,Old Trafford,73563,11,4,48.0,4,12,2,0,1.1,15,8,52.0,7,8,1,0,2.7
+PL_2023_005,2023-09-17,15:00,Premier League,2023-24,Arsenal,Everton,true,1,0,0,0,Emirates Stadium,60323,20,6,69.0,11,6,0,0,2.1,5,1,31.0,1,14,3,0,0.3
