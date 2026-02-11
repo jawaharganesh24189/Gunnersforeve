@@ -2,7 +2,9 @@
 
 A Keras-based Transformer model that generates passing tactics from the backline to the opposite goal, considering different oppositions, formations, and tactical contexts.
 
-**🆕 NEW: Enhanced notebook with multi-league support, player stats, and match history!** See [enhanced_tactics_transformer_notebook.ipynb](enhanced_tactics_transformer_notebook.ipynb)
+**🆕 NEW: Complete consolidated notebook with detailed explanations!** See [football_tactics_transformer_complete.ipynb](football_tactics_transformer_complete.ipynb)
+
+**📓 All-in-One Notebook**: Everything you need in a single, self-contained Jupyter notebook with comprehensive documentation for each cell!
 
 ## Overview
 
@@ -26,10 +28,13 @@ And generate optimal passing sequences from defense to attack.
 - **Extensible**: Built with modularity in mind for easy integration and extension
 
 ### Enhanced Features (NEW)
-- **🌍 Multi-League Support**: 40+ teams from Premier League, Serie A, Ligue 1, La Liga, and Bundesliga
-- **👤 Player Statistics**: Individual player ratings with position-specific calculations
+- **🌍 Multi-League Support**: 60 teams from Premier League, Serie A, Ligue 1, La Liga, and Bundesliga
+- **👤 Player Statistics**: 77 players with individual ratings and position-specific calculations
 - **📊 Team Attributes**: Attack/defense ratings, possession style, pressing intensity
-- **📈 Match History**: Training on actual match data with outcomes and statistics
+- **📈 Match History**: 15 real matches with outcomes, statistics, and passing sequences
+- **🎯 Real Data Training**: Train on actual match data with formations and tactical contexts
+- **📊 Comprehensive Visualizations**: Training curves, formations on pitch, passing sequences
+- **💾 Model Persistence**: Save and load trained models with configurations
 
 ## Project Structure
 
@@ -38,18 +43,30 @@ Gunnersforeve/
 ├── src/
 │   ├── transformer_model.py      # Core transformer architecture
 │   ├── data_preprocessing.py     # Data encoding and dataset creation
-│   ├── train.py                  # Training script
+│   ├── train.py                  # Training script (synthetic data)
+│   ├── train_on_match_data.py    # Training script (real match data) NEW!
 │   ├── inference.py              # Inference and tactics generation
-│   ├── teams_data.py             # Multi-league teams database (NEW)
-│   ├── player_stats.py           # Player statistics system (NEW)
-│   └── match_history.py          # Match data and outcomes (NEW)
+│   ├── visualize_tactics.py      # Visualization utilities NEW!
+│   ├── teams_data.py             # Multi-league teams database (60 teams) EXTENDED!
+│   ├── player_stats.py           # Player statistics system (77 players) EXTENDED!
+│   └── match_history.py          # Match data and outcomes (15 matches) EXTENDED!
+├── models/                        # Saved models and visualizations NEW!
+│   ├── tactics_transformer_match_data_final.weights.h5
+│   ├── model_config.json
+│   ├── training_history.json
+│   ├── training_curves.png
+│   ├── checkpoints/
+│   └── visualizations/
 ├── examples/
 │   └── usage_examples.py         # Example usage demonstrations
-├── enhanced_tactics_transformer_notebook.ipynb  # Standalone enhanced notebook (NEW)
+├── football_tactics_transformer_complete.ipynb  # Complete consolidated notebook ⭐ NEW!
+├── enhanced_tactics_transformer_notebook.ipynb  # Enhanced standalone notebook
 ├── arsenal_ml_notebook_standalone.ipynb         # Original standalone notebook
 ├── tests/                        # Test files (to be added)
 ├── requirements.txt              # Python dependencies
-├── ENHANCED_NOTEBOOK_README.md   # Enhanced notebook documentation (NEW)
+├── NOTEBOOK_GUIDE.md             # Complete notebook documentation NEW!
+├── TRAINING_GUIDE.md             # Training documentation NEW!
+├── ENHANCED_NOTEBOOK_README.md   # Enhanced notebook documentation
 └── README.md                     # This file
 ```
 
@@ -68,17 +85,42 @@ pip install -r requirements.txt
 
 ## Quick Start
 
-### Option 1: Enhanced Standalone Notebook (Recommended)
+### Option 1: Complete Consolidated Notebook (⭐ Recommended)
 
-Use the new enhanced notebook with multi-league support:
+**The easiest way to get started!** Use the comprehensive all-in-one notebook with detailed explanations:
+
+```bash
+jupyter notebook football_tactics_transformer_complete.ipynb
+```
+
+This notebook includes:
+- ✅ **Everything in one place**: All code, data, and explanations
+- ✅ **Self-contained**: No external files needed
+- ✅ **Detailed documentation**: Every cell thoroughly explained
+- ✅ **36 cells** with step-by-step progression
+- ✅ **Working examples**: Real tactical scenarios
+- ✅ **Visualizations**: Formations, sequences, training curves
+- ✅ **Production-ready**: Train, save, and deploy models
+
+See [NOTEBOOK_GUIDE.md](NOTEBOOK_GUIDE.md) for complete documentation.
+
+### Option 2: Enhanced Standalone Notebook
+
+Use the enhanced notebook with multi-league support:
 
 ```bash
 jupyter notebook enhanced_tactics_transformer_notebook.ipynb
 ```
 
 This notebook includes:
-- 40+ teams from 5 major leagues
-- 25+ players with detailed statistics
+- 60 teams from 5 major leagues
+- 77 players with detailed statistics
+- 15 sample matches from multiple leagues
+- All code embedded (no external files needed)
+
+### Option 3: Original Standalone Notebook
+
+Use the original Arsenal-focused notebook:
 - Sample match data from multiple leagues
 - All code embedded (no external files needed)
 
@@ -124,6 +166,25 @@ python examples/usage_examples.py
 
 #### 4. Train the Model
 
+**Option A: Train on Real Match Data (Recommended)**
+
+Train the transformer on real match data from 15 professional matches:
+
+```bash
+python src/train_on_match_data.py
+```
+
+This uses:
+- **15 real matches** from 5 major leagues
+- **60 teams** with detailed attributes  
+- **77 players** with position-specific ratings
+- Data augmentation for better generalization
+- Automatic model saving and visualization
+
+See [TRAINING_GUIDE.md](TRAINING_GUIDE.md) for detailed documentation.
+
+**Option B: Train on Synthetic Data**
+
 Train the transformer on synthetic tactical data:
 
 ```bash
@@ -137,6 +198,20 @@ Training options can be customized by modifying the parameters in `train.py`:
 - `num_heads`: Number of attention heads (default: 8)
 - `epochs`: Training epochs (default: 50)
 - `batch_size`: Batch size (default: 32)
+
+#### 5. Visualize Results
+
+After training, create comprehensive visualizations:
+
+```bash
+python src/visualize_tactics.py
+```
+
+This generates:
+- Training/validation curves
+- Formation diagrams on a football pitch
+- Passing sequence visualizations
+- Comprehensive model summary
 
 ### 3. Generate Tactics
 
