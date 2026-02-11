@@ -10,8 +10,8 @@ from tensorflow import keras
 import numpy as np
 from datetime import datetime
 
-from transformer_model import create_tactics_transformer
-from data_preprocessing import prepare_training_data, TacticsEncoder
+from .transformer_model import create_tactics_transformer
+from .data_preprocessing import prepare_training_data, TacticsEncoder
 
 
 class CustomSchedule(keras.optimizers.schedules.LearningRateSchedule):
