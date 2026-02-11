@@ -9,6 +9,7 @@ This repository provides tools and datasets for collecting, processing, and anal
 
 - 🔍 **Multiple Data Sources**: Integration with football-data.org API and support for other sources
 - 🤖 **AI Match Simulation**: Intelligent simulation of Arsenal and Premier League matches using statistical models
+- ⚽ **Advanced Tactical Simulator**: Event-level simulation with formations, playing styles, and match dynamics
 - 📊 **Standardized Schema**: Consistent data structure across all sources
 - 🎯 **Ready for ML**: Structured datasets perfect for training machine learning models
 - 📈 **Comprehensive Statistics**: Match results, team stats, player data, and advanced metrics
@@ -75,8 +76,14 @@ python scripts/fetch_data.py --api-key YOUR_KEY --season 2023 --format both
 ### Simulate Matches with AI
 
 ```bash
-# Simulate 20 Arsenal matches
+# Basic AI simulation - 20 Arsenal matches
 python scripts/simulate_matches.py --matches 20 --show-results
+
+# Advanced tactical simulation with event-level dynamics
+python scripts/simulate_tactical.py Arsenal "Manchester City" --detailed --show-events
+
+# Quick tactical simulation for multiple matches
+python scripts/simulate_tactical.py Arsenal Chelsea --quick --matches 10
 
 # Simulate a full Premier League round
 python scripts/simulate_matches.py --league-round 2024-01-20
@@ -116,17 +123,66 @@ Gunnersforeve/
 
 ## AI Match Simulation
 
-The AI simulation engine uses statistical models and team profiles to generate realistic match outcomes:
+The repository includes **two powerful simulation engines**:
 
-### Features
+### 1. Basic AI Simulator (`simulator.py`)
+Fast statistical simulation using Poisson distribution:
+- **Quick generation** of large datasets
+- Realistic scores and statistics
+- Team strength-based modeling
+- Perfect for ML training data
+
+### 2. Advanced Tactical Simulator (`tactical_simulator.py`)
+Sophisticated event-level simulation with tactical depth:
+- **Minute-by-minute** match simulation
+- **Formations**: 4-3-3, 4-4-2, 3-5-2, 4-2-3-1, etc.
+- **Playing styles**: Possession, Counter-attack, High Press, Defensive, etc.
+- **Match dynamics**: Momentum, energy, morale
+- **Event tracking**: Goals, shots, fouls, cards, corners with timestamps
+- **Tactical adjustments**: Half-time changes based on score
+- **Detailed team profiles**: 7+ tactical attributes per team
+
+### Tactical Simulation Features
+
+### Tactical Simulation Features
 - **Realistic Scores**: Uses Poisson distribution based on team strengths
 - **Team Profiles**: 20 Premier League teams with attack, defense, midfield ratings
+- **Tactical Attributes**: Pressing ability, passing quality, pace, physicality, creativity, discipline
+- **Formations & Styles**: Teams play with their preferred formations and tactics
+- **Match Events**: Minute-by-minute tracking of shots, goals, fouls, cards, corners
+- **Match Dynamics**: Momentum shifts, energy levels, morale changes
+- **Tactical Adjustments**: Teams adjust tactics at half-time based on score
 - **Advanced Stats**: Generates possession, shots, xG, corners, fouls, cards
 - **Home Advantage**: Accounts for home field advantage
 - **Form Factor**: Considers recent team performance
 - **Reproducible**: Use seeds for consistent results
 
-### Example Usage
+### Example Usage - Tactical Simulation
+
+```python
+from src.tactical_simulator import TacticalMatchSimulator
+
+# Create tactical simulator
+simulator = TacticalMatchSimulator(seed=42)
+
+# Simulate with detailed events
+match_data, match_state = simulator.simulate_tactical_match(
+    home_team="Arsenal",
+    away_team="Manchester City",
+    date="2024-03-31",
+    detailed_events=True  # Enable minute-by-minute simulation
+)
+
+# Access detailed events
+for event in match_state.events:
+    if event.event_type.value == "goal":
+        print(f"{event.minute}' - ⚽ GOAL by {event.team}!")
+
+# Get match summary
+print(simulator.get_match_summary())
+```
+
+### Example Usage - Basic Simulation
 
 ```python
 from src.simulator import FootballMatchSimulator
