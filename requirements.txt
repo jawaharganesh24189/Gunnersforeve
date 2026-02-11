@@ -5,3 +5,11 @@ seaborn>=0.12.0
 tensorflow>=2.13.0
 scikit-learn>=1.3.0
 jupyter>=1.0.0
+
+# Optional: Advanced Football Simulators (choose one or more)
+# Google Research Football - Most recommended for realistic physics
+# gfootball>=2.10
+# rSoccer - Easy to use, Gymnasium compatible
+# rsoccer-gym>=1.0.0
+# Unity ML-Agents Soccer
+# soccer-twos-env>=0.1.0

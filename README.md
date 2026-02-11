@@ -50,3 +50,19 @@ The tactical AI uses:
 - TensorFlow 2.13+
 - NumPy, Pandas, Matplotlib, Seaborn
 - Jupyter Notebook
+
+### Advanced Simulation Options
+
+For more realistic physics and comprehensive metrics, see [FOOTBALL_SIMULATORS_GUIDE.md](FOOTBALL_SIMULATORS_GUIDE.md) for integration with:
+
+- **Google Research Football** ⭐ (Recommended) - Realistic 3D physics, Gym API, pre-trained models
+- **RoboCup Soccer Simulation 2D** - Competition-grade simulator with 25+ years of development
+- **rSoccer** - Modern Gymnasium-compatible SSL/VSSS environments
+- **Unity ML-Agents** - High-quality 3D graphics with multi-agent support
+
+To use Google Research Football (recommended for best physics):
+```bash
+pip install gfootball
+```
+
+See the guide for detailed comparisons, installation instructions, and integration examples.
