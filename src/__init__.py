@@ -2,13 +2,14 @@
 Gunnersforeve - Football Tactics Transformer
 
 A Keras-based transformer model for generating passing tactics.
+Improved with DLA (Deep Learning Architecture) best practices.
 """
 
 from .transformer_model import (
     TacticsTransformer,
     create_tactics_transformer,
     PositionalEncoding,
-    MultiHeadAttention,
+    FeedForward,
     EncoderLayer,
     DecoderLayer
 )
@@ -24,7 +25,7 @@ from .inference import (
     load_model_for_inference
 )
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'  # Updated version for DLA improvements
 __author__ = 'Gunnersforeve Team'
 
 __all__ = [
@@ -36,7 +37,7 @@ __all__ = [
     'prepare_training_data',
     'load_model_for_inference',
     'PositionalEncoding',
-    'MultiHeadAttention',
+    'FeedForward',
     'EncoderLayer',
     'DecoderLayer'
 ]

@@ -9,8 +9,13 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from .transformer_model import create_tactics_transformer
-from .data_preprocessing import TacticsEncoder
+try:
+    from .transformer_model import create_tactics_transformer
+    from .data_preprocessing import TacticsEncoder
+except ImportError:
+    # Fall back to direct imports for standalone usage
+    from transformer_model import create_tactics_transformer
+    from data_preprocessing import TacticsEncoder
 
 
 class TacticsGenerator:
