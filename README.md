@@ -17,9 +17,28 @@ This repository provides tools and datasets for collecting, processing, and anal
 
 ## Quick Start
 
-### One-Click Access: Jupyter Notebook 📓
+### 🌟 NEW: Self-Contained ML Notebook (Recommended for Learning!)
 
-**The easiest way to use everything in one place:**
+**For a complete standalone experience with NO external dependencies:**
+
+```bash
+jupyter notebook arsenal_ml_notebook_standalone.ipynb
+```
+
+This notebook has:
+- ✅ **Zero external imports** - All code embedded directly
+- ✅ **Complete ML pipeline** - From simulation to evaluation
+- ✅ **Rich visualizations** - 5 comprehensive plots
+- ✅ **Detailed explanations** - Markdown between every code cell
+- ✅ **~500 lines of code** - Fully self-contained
+
+Perfect for learning machine learning with football data!
+
+---
+
+### One-Click Access: Full-Featured Jupyter Notebook 📓
+
+**For the complete system with all features:**
 
 ```bash
 # Install dependencies
@@ -37,6 +56,26 @@ The notebook includes:
 - ✅ Export functionality
 
 **Everything runs in your browser with no additional setup needed!**
+
+---
+
+### 📋 Which Notebook Should I Use?
+
+| Feature | `arsenal_ml_notebook_standalone.ipynb` | `arsenal_complete_notebook.ipynb` |
+|---------|----------------------------------------|-----------------------------------|
+| **External Files** | ❌ None (fully self-contained) | ✅ Imports from src/ directory |
+| **ML Models** | ✅ 2 models (Classification + Regression) | ❌ No ML models |
+| **Visualizations** | ✅ 5 plots with detailed analysis | ✅ Multiple analysis plots |
+| **Explanations** | ✅✅ Detailed markdown between all cells | ✅ Good documentation |
+| **Data Collection** | ❌ Simulated data only | ✅ Real API integration |
+| **Tactical Simulator** | ❌ Basic Poisson model | ✅ Advanced event-level |
+| **Best For** | 📚 Learning ML & Analytics | 🚀 Production & Full Features |
+
+**Choose:**
+- 📚 **Learning/Education**: Use `arsenal_ml_notebook_standalone.ipynb` (completely self-contained!)
+- 🚀 **Production/Analysis**: Use `arsenal_complete_notebook.ipynb` (full feature set)
+
+---
 
 ### Alternative: Command Line Usage
 
