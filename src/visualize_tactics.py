@@ -229,14 +229,6 @@ def plot_passing_sequence(
             ax.text(x, y - 6, f"{i+1}. {position}", 
                    ha='center', va='top', fontsize=10, fontweight='bold',
                    bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.7))
-            
-            # Draw arrow to next position
-            if i < len(coords) - 1 and i < len(sequence) - 1:
-                next_pos = sequence[i + 1][0]
-                if next_pos in position_coords:
-                    next_x, next_y = position_coords[next_pos]
-                    next_x += np.random.randint(-3, 4)
-                    next_y += np.random.randint(-3, 4)
     
     # Draw arrows between positions
     for i in range(len(coords) - 1):

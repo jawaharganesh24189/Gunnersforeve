@@ -312,4 +312,4 @@ To contribute match data:
 
 ---
 
-**For more information, see the main [README.md](../README.md)**
+**For more information, see the main [README.md](README.md)**

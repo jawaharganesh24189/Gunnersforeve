@@ -87,8 +87,9 @@ def create_training_data_from_matches(
     Returns:
         Tuple of (input_sequences, target_sequences)
     """
-    input_sequences = []
-    target_sequences = []
+    # Pitch coordinate boundaries
+    MIN_COORD = 0
+    MAX_COORD = 100
     
     for match in matches:
         if match.passing_sequences is None:
@@ -113,8 +114,8 @@ def create_training_data_from_matches(
             for pos, action, success_rate in sequence[:5]:  # Take first 5 positions
                 encoded_input.append(encoder.encode_position(pos))
                 # Add dummy coordinates
-                encoded_input.append(np.random.randint(0, 100))
-                encoded_input.append(np.random.randint(0, 100))
+                encoded_input.append(np.random.randint(MIN_COORD, MAX_COORD + 1))
+                encoded_input.append(np.random.randint(MIN_COORD, MAX_COORD + 1))
             
             input_sequences.append(np.array(encoded_input, dtype=np.int32))
             
@@ -123,8 +124,11 @@ def create_training_data_from_matches(
             for pos, action, success_rate in sequence:
                 encoded_target.append(encoder.encode_position(pos))
                 # Extract action name from tuple or use default
-                action_name = action if isinstance(action, str) else 'short_pass'
-                encoded_target.append(encoder.encode_action(action_name))
+                if not isinstance(action, str):
+                    import warnings
+                    warnings.warn(f"Non-string action found: {action}, using 'short_pass' as default")
+                    action = 'short_pass'
+                encoded_target.append(encoder.encode_action(action))
             encoded_target.append(encoder.actions['<END>'])
             
             target_sequences.append(np.array(encoded_target, dtype=np.int32))
@@ -192,9 +196,11 @@ def augment_match_data(
             # Add small variations to positions
             for i in range(5, len(aug_input), 3):
                 if i + 2 < len(aug_input):
-                    # Add small noise to coordinates
-                    aug_input[i + 1] = max(0, min(100, aug_input[i + 1] + np.random.randint(-10, 11)))
-                    aug_input[i + 2] = max(0, min(100, aug_input[i + 2] + np.random.randint(-10, 11)))
+                    # Add small noise to coordinates (within pitch boundaries)
+                    MIN_COORD = 0
+                    MAX_COORD = 100
+                    aug_input[i + 1] = max(MIN_COORD, min(MAX_COORD, aug_input[i + 1] + np.random.randint(-10, 11)))
+                    aug_input[i + 2] = max(MIN_COORD, min(MAX_COORD, aug_input[i + 2] + np.random.randint(-10, 11)))
             
             augmented_inputs.append(aug_input)
         
