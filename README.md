@@ -2,6 +2,8 @@
 
 A Keras-based Transformer model that generates passing tactics from the backline to the opposite goal, considering different oppositions, formations, and tactical contexts.
 
+**🆕 NEW: Enhanced notebook with multi-league support, player stats, and match history!** See [enhanced_tactics_transformer_notebook.ipynb](enhanced_tactics_transformer_notebook.ipynb)
+
 ## Overview
 
 This project implements a state-of-the-art transformer neural network architecture to generate intelligent passing sequences in football. The model can analyze tactical situations including:
@@ -16,11 +18,18 @@ And generate optimal passing sequences from defense to attack.
 
 ## Features
 
+### Core Features
 - **Multi-Head Attention Mechanism**: Captures complex relationships between players and positions
 - **Positional Encoding**: Understands sequence order and field positions
 - **Encoder-Decoder Architecture**: Processes tactical input and generates passing sequences
 - **Customizable**: Easily adjust model parameters, formations, and tactical contexts
 - **Extensible**: Built with modularity in mind for easy integration and extension
+
+### Enhanced Features (NEW)
+- **🌍 Multi-League Support**: 40+ teams from Premier League, Serie A, Ligue 1, La Liga, and Bundesliga
+- **👤 Player Statistics**: Individual player ratings with position-specific calculations
+- **📊 Team Attributes**: Attack/defense ratings, possession style, pressing intensity
+- **📈 Match History**: Training on actual match data with outcomes and statistics
 
 ## Project Structure
 
@@ -30,11 +39,17 @@ Gunnersforeve/
 │   ├── transformer_model.py      # Core transformer architecture
 │   ├── data_preprocessing.py     # Data encoding and dataset creation
 │   ├── train.py                  # Training script
-│   └── inference.py              # Inference and tactics generation
+│   ├── inference.py              # Inference and tactics generation
+│   ├── teams_data.py             # Multi-league teams database (NEW)
+│   ├── player_stats.py           # Player statistics system (NEW)
+│   └── match_history.py          # Match data and outcomes (NEW)
 ├── examples/
 │   └── usage_examples.py         # Example usage demonstrations
+├── enhanced_tactics_transformer_notebook.ipynb  # Standalone enhanced notebook (NEW)
+├── arsenal_ml_notebook_standalone.ipynb         # Original standalone notebook
 ├── tests/                        # Test files (to be added)
 ├── requirements.txt              # Python dependencies
+├── ENHANCED_NOTEBOOK_README.md   # Enhanced notebook documentation (NEW)
 └── README.md                     # This file
 ```
 
@@ -53,7 +68,53 @@ pip install -r requirements.txt
 
 ## Quick Start
 
-### 1. Run Examples
+### Option 1: Enhanced Standalone Notebook (Recommended)
+
+Use the new enhanced notebook with multi-league support:
+
+```bash
+jupyter notebook enhanced_tactics_transformer_notebook.ipynb
+```
+
+This notebook includes:
+- 40+ teams from 5 major leagues
+- 25+ players with detailed statistics
+- Sample match data from multiple leagues
+- All code embedded (no external files needed)
+
+See [ENHANCED_NOTEBOOK_README.md](ENHANCED_NOTEBOOK_README.md) for details.
+
+### Option 2: Python Modules
+
+#### 1. Explore Teams and Players
+
+```python
+from src import get_team_by_name, get_player_by_name, get_teams_by_league, League
+
+# Get teams from different leagues
+arsenal = get_team_by_name("Arsenal")
+napoli = get_team_by_name("Napoli")
+psg = get_team_by_name("Paris Saint-Germain")
+
+# Get all Serie A teams
+serie_a_teams = get_teams_by_league(League.SERIE_A)
+
+# Get player stats
+saliba = get_player_by_name("Saliba")
+print(f"{saliba.name}: Overall {saliba.overall}, CB rating: {saliba.get_position_rating('CB')}")
+```
+
+#### 2. Load Match History
+
+```python
+from src import load_match_history
+
+loader = load_match_history()
+stats = loader.get_statistics()
+print(f"Total matches: {stats['total_matches']}")
+```
+
+#### 3. Run Example Scripts
 
 See the model in action with example scenarios:
 
@@ -61,7 +122,7 @@ See the model in action with example scenarios:
 python examples/usage_examples.py
 ```
 
-### 2. Train the Model
+#### 4. Train the Model
 
 Train the transformer on synthetic tactical data:
 
