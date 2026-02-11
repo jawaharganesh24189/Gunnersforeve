@@ -91,6 +91,9 @@ def create_training_data_from_matches(
     MIN_COORD = 0
     MAX_COORD = 100
     
+    input_sequences = []
+    target_sequences = []
+    
     for match in matches:
         if match.passing_sequences is None:
             continue
