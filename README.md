@@ -2,7 +2,9 @@
 
 A Keras-based Transformer model that generates passing tactics from the backline to the opposite goal, considering different oppositions, formations, and tactical contexts.
 
-**🆕 NEW: Enhanced notebook with multi-league support, player stats, and match history!** See [enhanced_tactics_transformer_notebook.ipynb](enhanced_tactics_transformer_notebook.ipynb)
+**🆕 NEW: Complete consolidated notebook with detailed explanations!** See [football_tactics_transformer_complete.ipynb](football_tactics_transformer_complete.ipynb)
+
+**📓 All-in-One Notebook**: Everything you need in a single, self-contained Jupyter notebook with comprehensive documentation for each cell!
 
 ## Overview
 
@@ -57,10 +59,12 @@ Gunnersforeve/
 │   └── visualizations/
 ├── examples/
 │   └── usage_examples.py         # Example usage demonstrations
-├── enhanced_tactics_transformer_notebook.ipynb  # Standalone enhanced notebook
+├── football_tactics_transformer_complete.ipynb  # Complete consolidated notebook ⭐ NEW!
+├── enhanced_tactics_transformer_notebook.ipynb  # Enhanced standalone notebook
 ├── arsenal_ml_notebook_standalone.ipynb         # Original standalone notebook
 ├── tests/                        # Test files (to be added)
 ├── requirements.txt              # Python dependencies
+├── NOTEBOOK_GUIDE.md             # Complete notebook documentation NEW!
 ├── TRAINING_GUIDE.md             # Training documentation NEW!
 ├── ENHANCED_NOTEBOOK_README.md   # Enhanced notebook documentation
 └── README.md                     # This file
@@ -81,17 +85,42 @@ pip install -r requirements.txt
 
 ## Quick Start
 
-### Option 1: Enhanced Standalone Notebook (Recommended)
+### Option 1: Complete Consolidated Notebook (⭐ Recommended)
 
-Use the new enhanced notebook with multi-league support:
+**The easiest way to get started!** Use the comprehensive all-in-one notebook with detailed explanations:
+
+```bash
+jupyter notebook football_tactics_transformer_complete.ipynb
+```
+
+This notebook includes:
+- ✅ **Everything in one place**: All code, data, and explanations
+- ✅ **Self-contained**: No external files needed
+- ✅ **Detailed documentation**: Every cell thoroughly explained
+- ✅ **36 cells** with step-by-step progression
+- ✅ **Working examples**: Real tactical scenarios
+- ✅ **Visualizations**: Formations, sequences, training curves
+- ✅ **Production-ready**: Train, save, and deploy models
+
+See [NOTEBOOK_GUIDE.md](NOTEBOOK_GUIDE.md) for complete documentation.
+
+### Option 2: Enhanced Standalone Notebook
+
+Use the enhanced notebook with multi-league support:
 
 ```bash
 jupyter notebook enhanced_tactics_transformer_notebook.ipynb
 ```
 
 This notebook includes:
-- 40+ teams from 5 major leagues
-- 25+ players with detailed statistics
+- 60 teams from 5 major leagues
+- 77 players with detailed statistics
+- 15 sample matches from multiple leagues
+- All code embedded (no external files needed)
+
+### Option 3: Original Standalone Notebook
+
+Use the original Arsenal-focused notebook:
 - Sample match data from multiple leagues
 - All code embedded (no external files needed)
 
