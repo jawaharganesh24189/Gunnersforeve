@@ -111,3 +111,4 @@ Removed all incorrect import patterns:
 - ✓ Direct reference to classes defined in previous cells
 
 This ensures notebooks work both in Jupyter and when converted to scripts.
+
