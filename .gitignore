@@ -54,3 +54,10 @@ Thumbs.db
 # Temporary files
 /tmp/
 *.tmp
+
+# Generated outputs
+*.png
+*.json
+*.pkl
+*_executed.ipynb
+comprehensive_football_transformer_v3.ipynb
