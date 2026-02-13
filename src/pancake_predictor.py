@@ -207,6 +207,8 @@ def build_robust_pancake_model(seq_length=SEQ_LENGTH, features=FEATURES):
     # We inject random noise (stddev=0.05) to the input data.
     # This prevents the model from memorizing exact prices (Overfitting).
     # It learns to see the "Shape" through the "Fog".
+    # Note: GaussianNoise is only active during training (automatically
+    # disabled during inference via model.predict()).
     x = GaussianNoise(0.05)(inputs)
 
     # --- LAYER 2: FEATURE EXTRACTION (Conv1D) ---
@@ -307,7 +309,7 @@ def ensemble_predict(base_model, robust_model, sequence,
 # ==========================================
 def build_distilled_model(teacher_base, teacher_robust, X_train,
                           seq_length=SEQ_LENGTH, features=FEATURES,
-                          epochs=5, batch_size=32, temperature=3.0):
+                          epochs=5, batch_size=32):
     """
     Build a student model that learns from both teacher models (knowledge distillation).
 
@@ -323,7 +325,6 @@ def build_distilled_model(teacher_base, teacher_robust, X_train,
         features: Number of features (default: 5).
         epochs: Number of training epochs (default: 5).
         batch_size: Training batch size (default: 32).
-        temperature: Softening temperature for teacher predictions (default: 3.0).
 
     Returns:
         Trained student model.
