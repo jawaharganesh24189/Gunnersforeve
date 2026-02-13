@@ -76,7 +76,7 @@ def generate_market_data(n_minutes=10000):
     delta = df['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(14).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-    rs = gain / loss
+    rs = gain / loss.replace(0, np.finfo(float).eps)
     df['RSI'] = 100 - (100 / (1 + rs))
     df = df.fillna(50)
 
