@@ -4,6 +4,8 @@ A Keras-based Transformer model that generates passing tactics from the backline
 
 **🆕 NEW: Enhanced notebook with multi-league support, player stats, and match history!** See [enhanced_tactics_transformer_notebook.ipynb](enhanced_tactics_transformer_notebook.ipynb)
 
+**🆕 NEW: PancakeSwap Prediction Bot** — BiLSTM + Attention model for BNB 5-minute price prediction. See [pancake_predictor_notebook.ipynb](pancake_predictor_notebook.ipynb)
+
 ## Overview
 
 This project implements a state-of-the-art transformer neural network architecture to generate intelligent passing sequences in football. The model can analyze tactical situations including:
@@ -42,10 +44,12 @@ Gunnersforeve/
 │   ├── inference.py              # Inference and tactics generation
 │   ├── teams_data.py             # Multi-league teams database (NEW)
 │   ├── player_stats.py           # Player statistics system (NEW)
-│   └── match_history.py          # Match data and outcomes (NEW)
+│   ├── match_history.py          # Match data and outcomes (NEW)
+│   └── pancake_predictor.py      # PancakeSwap BNB prediction bot (NEW)
 ├── examples/
 │   └── usage_examples.py         # Example usage demonstrations
 ├── enhanced_tactics_transformer_notebook.ipynb  # Standalone enhanced notebook (NEW)
+├── pancake_predictor_notebook.ipynb             # PancakeSwap prediction notebook (NEW)
 ├── arsenal_ml_notebook_standalone.ipynb         # Original standalone notebook
 ├── tests/                        # Test files (to be added)
 ├── requirements.txt              # Python dependencies
@@ -84,7 +88,38 @@ This notebook includes:
 
 See [ENHANCED_NOTEBOOK_README.md](ENHANCED_NOTEBOOK_README.md) for details.
 
-### Option 2: Python Modules
+### Option 2: PancakeSwap Prediction Bot
+
+Run the BNB 5-minute prediction model notebook:
+
+```bash
+jupyter notebook pancake_predictor_notebook.ipynb
+```
+
+Or use the Python module directly:
+
+```python
+from src.pancake_predictor import (
+    generate_market_data,
+    create_sequences,
+    build_pancake_model,
+    trade_logic,
+    run_prediction_pipeline
+)
+
+# Run the full pipeline (generate data, train, predict)
+model, history, result = run_prediction_pipeline()
+
+# Or step by step:
+market_data = generate_market_data(n_minutes=10000)
+X, y, scaler = create_sequences(market_data)
+model = build_pancake_model()
+decision, prob, ev_bull, ev_bear = trade_logic(
+    model, X[-1], bull_payout=1.95, bear_payout=1.95
+)
+```
+
+### Option 3: Python Modules
 
 #### 1. Explore Teams and Players
 

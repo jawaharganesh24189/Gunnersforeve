@@ -48,6 +48,17 @@ from .match_history import (
     load_match_history
 )
 
+from .pancake_predictor import (
+    generate_market_data,
+    create_sequences,
+    build_pancake_model,
+    trade_logic,
+    run_prediction_pipeline,
+    SEQ_LENGTH,
+    PREDICT_AHEAD,
+    FEATURES
+)
+
 __version__ = '1.0.0'
 __author__ = 'Gunnersforeve Team'
 
@@ -77,5 +88,13 @@ __all__ = [
     'MatchData',
     'MatchDataLoader',
     'create_sample_match_data',
-    'load_match_history'
+    'load_match_history',
+    'generate_market_data',
+    'create_sequences',
+    'build_pancake_model',
+    'trade_logic',
+    'run_prediction_pipeline',
+    'SEQ_LENGTH',
+    'PREDICT_AHEAD',
+    'FEATURES'
 ]
