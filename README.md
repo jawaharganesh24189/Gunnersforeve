@@ -6,6 +6,8 @@ A Keras-based Transformer model that generates passing tactics from the backline
 
 **🆕 NEW: PancakeSwap Prediction Bot** — BiLSTM + Attention model for BNB 5-minute price prediction. See [pancake_predictor_notebook.ipynb](pancake_predictor_notebook.ipynb)
 
+**🆕 NEW: PancakeSwap Live Data Notebook** — Self-contained notebook with real-time Binance OHLCV + PancakeSwap Web3 contract data. See [pancake_predictor_live_notebook.ipynb](pancake_predictor_live_notebook.ipynb)
+
 ## Overview
 
 This project implements a state-of-the-art transformer neural network architecture to generate intelligent passing sequences in football. The model can analyze tactical situations including:
@@ -50,6 +52,7 @@ Gunnersforeve/
 │   └── usage_examples.py         # Example usage demonstrations
 ├── enhanced_tactics_transformer_notebook.ipynb  # Standalone enhanced notebook (NEW)
 ├── pancake_predictor_notebook.ipynb             # PancakeSwap prediction notebook (NEW)
+├── pancake_predictor_live_notebook.ipynb        # Self-contained live data notebook (NEW)
 ├── arsenal_ml_notebook_standalone.ipynb         # Original standalone notebook
 ├── tests/                        # Test files (to be added)
 ├── requirements.txt              # Python dependencies
@@ -118,6 +121,22 @@ decision, prob, ev_bull, ev_bear = trade_logic(
     model, X[-1], bull_payout=1.95, bear_payout=1.95
 )
 ```
+
+### Option 2b: PancakeSwap Live Data Notebook (Self-Contained)
+
+This notebook runs as a **single standalone file** — no external dependencies on `src/` modules.
+It fetches real-time BNB/USDT data from Binance and PancakeSwap contract data via Web3:
+
+```bash
+jupyter notebook pancake_predictor_live_notebook.ipynb
+```
+
+Features:
+- Installs all dependencies automatically (tensorflow, ccxt, web3, etc.)
+- Fetches real OHLCV candles from Binance API
+- Reads PancakeSwap smart contract (currentEpoch, lockPrice, bullAmount, bearAmount)
+- Falls back to simulated data if APIs are unreachable
+- Both models (Base + Robust), comparison, ensemble, distillation, backtesting
 
 ### Option 3: Python Modules
 
