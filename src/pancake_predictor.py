@@ -223,8 +223,10 @@ def fetch_live_market_data(symbol='BNB/USDT', timeframe='1m', limit=500,
         'Volume': ohlcv_df['Volume'].values,
     })
 
-    # Approximate per-candle pool sentiment from price momentum
-    # (In production, you'd store per-round contract snapshots)
+    # Approximate per-candle pool sentiment from price momentum.
+    # Live price changes are in USD (e.g. ±0.5 to ±5), so we use a
+    # smaller scale factor (0.01) compared to simulated data (0.1)
+    # to keep the sentiment ratio in a realistic 1.1–3.0 payout range.
     price_changes = df['Close'].diff().fillna(0)
     sentiment = 1.8 - (price_changes * 0.01)
     df['Bull_Payout'] = np.clip(sentiment, 1.1, 3.0)
