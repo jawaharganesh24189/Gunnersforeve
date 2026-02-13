@@ -1,27 +1,35 @@
 """
 PancakeSwap Prediction Bot - BNB 5-Minute Model
 
-This module implements a BiLSTM + Attention model for predicting BNB price
-direction on PancakeSwap's 5-minute prediction rounds. It applies Sequence
-Modeling (S2) and Classification concepts from DLA study.
+This module implements two models for predicting BNB price direction on
+PancakeSwap's 5-minute prediction rounds. It applies Sequence Modeling (S2)
+and Classification concepts from DLA study.
 
-Architecture:
-    - Input Layer: (Batch, 30, Features)
-    - Encoder (BiLSTM): Captures momentum (price acceleration/exhaustion)
-    - Attention Layer (MultiHeadAttention): Focuses on volume spikes (whale activity)
-    - Output: Sigmoid (Probability of closing HIGHER than the Lock Price)
+Models:
+    1. Base Model (BiLSTM + Attention):
+        - BiLSTM encoder for momentum detection
+        - MultiHeadAttention for volume spike focus
+        - Sigmoid output for Bull probability
+
+    2. Robust Model (Conv1D + Stacked BiLSTM + Attention + Residual):
+        - GaussianNoise for overfitting prevention
+        - Conv1D for automatic candlestick pattern extraction
+        - Stacked BiLSTMs for fast and deep temporal patterns
+        - MultiHeadAttention with residual connection (ResNet-style)
+        - Sigmoid output for Bull probability
 
 CRISP-DM Workflow:
     1. Business Understanding - PancakeSwap 5-min prediction game
     2. Data Understanding & Preparation - OHLCV + contract sentiment
-    3. Modeling - BiLSTM + Attention
-    4. Evaluation - Expected Value (EV) based trading logic
+    3. Modeling - BiLSTM + Attention (base) and Conv1D + BiLSTM + Attention (robust)
+    4. Evaluation - Expected Value (EV) based trading logic, model comparison, ensemble
 """
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras import layers, models, Input
+from tensorflow.keras.layers import Conv1D, GaussianNoise, Add, LayerNormalization, GlobalAveragePooling1D
 from sklearn.preprocessing import MinMaxScaler
 
 # --- CONFIGURATION ---
@@ -170,6 +178,183 @@ def build_pancake_model(seq_length=SEQ_LENGTH, features=FEATURES):
         metrics=['accuracy']
     )
     return model
+
+
+# ==========================================
+# 3b. ROBUST MODEL (Conv1D + Stacked BiLSTM + Attention + Residual)
+# ==========================================
+def build_robust_pancake_model(seq_length=SEQ_LENGTH, features=FEATURES):
+    """
+    Build a robust Conv1D + Stacked BiLSTM + Attention model with residual connections.
+
+    Architecture:
+        - GaussianNoise: Prevents overfitting by injecting noise during training
+        - Conv1D: Automatically learns candlestick patterns (3-minute kernel)
+        - Stacked BiLSTMs: Fast patterns (layer 1) and deep trends (layer 2)
+        - MultiHeadAttention + Residual: Correlations with ResNet-style skip connection
+        - GlobalAveragePooling + Dense: Makes the Bull/Bear decision
+
+    Args:
+        seq_length: Length of the input sequence (default: 30).
+        features: Number of input features (default: 5).
+
+    Returns:
+        Compiled Keras Model with sigmoid output.
+    """
+    inputs = Input(shape=(seq_length, features))
+
+    # --- LAYER 1: ROBUSTNESS (Gaussian Noise) ---
+    # We inject random noise (stddev=0.05) to the input data.
+    # This prevents the model from memorizing exact prices (Overfitting).
+    # It learns to see the "Shape" through the "Fog".
+    x = GaussianNoise(0.05)(inputs)
+
+    # --- LAYER 2: FEATURE EXTRACTION (Conv1D) ---
+    # Filters=32, Kernel=3 means "Look at 3 minutes at a time".
+    # This automatically learns candlestick patterns (e.g., Engulfing candles).
+    x = Conv1D(filters=32, kernel_size=3, padding='same', activation='relu')(x)
+    x = LayerNormalization()(x)  # Keeps values stable
+
+    # --- LAYER 3: TEMPORAL MEMORY (Stacked BiLSTMs) ---
+    # We stack two LSTMs.
+    # LSTM 1: Fast patterns (return_sequences=True keeps the timeline)
+    x = layers.Bidirectional(layers.LSTM(64, return_sequences=True))(x)
+    x = layers.Dropout(0.3)(x)
+
+    # LSTM 2: Deep patterns (The "Trend")
+    # We save this output 'lstm_out' for the Residual connection later
+    lstm_out = layers.Bidirectional(layers.LSTM(64, return_sequences=True))(x)
+
+    # --- LAYER 4: ATTENTION + RESIDUAL (The Transformer Block) ---
+    # Multi-Head Attention looks for correlations across the 30-minute window
+    attn_out = layers.MultiHeadAttention(num_heads=4, key_dim=32)(lstm_out, lstm_out)
+
+    # RESIDUAL CONNECTION (Add & Norm)
+    # We add the LSTM memory (lstm_out) to the Attention insight (attn_out).
+    # This is the "Safety Net" that creates robust Deep Learning models (like ResNet).
+    x = Add()([lstm_out, attn_out])
+    x = LayerNormalization()(x)
+
+    # --- LAYER 5: DECISION ---
+    x = GlobalAveragePooling1D()(x)  # Summarize the whole sequence
+
+    # Dense layers to reason about the features
+    x = layers.Dense(64, activation='relu')(x)
+    x = layers.Dropout(0.3)(x)  # Heavy dropout for financial data
+
+    output = layers.Dense(1, activation='sigmoid', name="Bull_Probability")(x)
+
+    model = models.Model(inputs=inputs, outputs=output)
+
+    # Use a lower learning rate for robust fine-tuning
+    opt = tf.keras.optimizers.Adam(learning_rate=0.0005)
+
+    model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+
+
+# ==========================================
+# 3c. ENSEMBLE PREDICTION (Dual Model)
+# ==========================================
+def ensemble_predict(base_model, robust_model, sequence,
+                     seq_length=SEQ_LENGTH, features=FEATURES,
+                     base_weight=0.5, robust_weight=0.5):
+    """
+    Generate predictions from both models and combine them.
+
+    Uses a weighted average of both model predictions. The ensemble
+    reduces variance and can improve accuracy by combining the strengths
+    of both architectures.
+
+    Args:
+        base_model: Trained base BiLSTM + Attention model.
+        robust_model: Trained robust Conv1D + BiLSTM + Attention model.
+        sequence: Input sequence of shape (seq_length, features).
+        seq_length: Sequence length (default: 30).
+        features: Number of features (default: 5).
+        base_weight: Weight for base model prediction (default: 0.5).
+        robust_weight: Weight for robust model prediction (default: 0.5).
+
+    Returns:
+        Dict with keys: base_prob, robust_prob, ensemble_prob,
+        base_decision, robust_decision, ensemble_decision.
+    """
+    seq_reshaped = sequence.reshape(1, seq_length, features)
+
+    base_prob = float(base_model.predict(seq_reshaped, verbose=0)[0][0])
+    robust_prob = float(robust_model.predict(seq_reshaped, verbose=0)[0][0])
+    ensemble_prob = (base_weight * base_prob) + (robust_weight * robust_prob)
+
+    def _decision(prob):
+        if prob > 0.60:
+            return "BET BULL"
+        elif prob < 0.40:
+            return "BET BEAR"
+        return "SKIP"
+
+    return {
+        'base_prob': base_prob,
+        'robust_prob': robust_prob,
+        'ensemble_prob': ensemble_prob,
+        'base_decision': _decision(base_prob),
+        'robust_decision': _decision(robust_prob),
+        'ensemble_decision': _decision(ensemble_prob),
+    }
+
+
+# ==========================================
+# 3d. KNOWLEDGE DISTILLATION (Teacher-Student)
+# ==========================================
+def build_distilled_model(teacher_base, teacher_robust, X_train,
+                          seq_length=SEQ_LENGTH, features=FEATURES,
+                          epochs=5, batch_size=32, temperature=3.0):
+    """
+    Build a student model that learns from both teacher models (knowledge distillation).
+
+    The student model is trained on soft labels (averaged predictions from
+    both teachers), which transfers the learned knowledge of both
+    architectures into a single smaller model.
+
+    Args:
+        teacher_base: Trained base model.
+        teacher_robust: Trained robust model.
+        X_train: Training input data.
+        seq_length: Sequence length (default: 30).
+        features: Number of features (default: 5).
+        epochs: Number of training epochs (default: 5).
+        batch_size: Training batch size (default: 32).
+        temperature: Softening temperature for teacher predictions (default: 3.0).
+
+    Returns:
+        Trained student model.
+    """
+    # Generate soft labels from both teachers
+    base_preds = teacher_base.predict(X_train, verbose=0)
+    robust_preds = teacher_robust.predict(X_train, verbose=0)
+    soft_labels = (base_preds + robust_preds) / 2.0
+
+    # Build a lightweight student model
+    inputs = Input(shape=(seq_length, features))
+    x = layers.Bidirectional(layers.LSTM(32, return_sequences=True))(inputs)
+    x = layers.Dropout(0.2)(x)
+    attn = layers.MultiHeadAttention(num_heads=2, key_dim=16)(x, x)
+    x = Add()([x, attn])
+    x = LayerNormalization()(x)
+    x = GlobalAveragePooling1D()(x)
+    x = layers.Dense(32, activation='relu')(x)
+    output = layers.Dense(1, activation='sigmoid', name="Bull_Probability")(x)
+
+    student = models.Model(inputs=inputs, outputs=output)
+    student.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+        loss='binary_crossentropy',
+        metrics=['accuracy']
+    )
+
+    # Train on soft labels from teachers
+    student.fit(X_train, soft_labels, epochs=epochs, batch_size=batch_size, verbose=1)
+
+    return student
 
 
 # ==========================================
