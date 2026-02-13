@@ -37,9 +37,219 @@ SEQ_LENGTH = 30       # Look back at last 30 minutes
 PREDICT_AHEAD = 5     # Predict 5 minutes into the future
 FEATURES = 5          # [Close, Volume, RSI, Bull_Ratio, Bear_Ratio]
 
+# PancakeSwap Prediction V2 Contract (BSC Mainnet)
+PANCAKE_PREDICTION_ADDRESS = '0x18B2A687610328590Bc8F2e5fEdDe3b582A49cdA'
+
+# Minimal ABI for the PancakeSwap Prediction contract (read-only)
+PREDICTION_ABI = [
+    {
+        "inputs": [],
+        "name": "currentEpoch",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "name": "rounds",
+        "outputs": [
+            {"internalType": "uint256", "name": "epoch", "type": "uint256"},
+            {"internalType": "uint256", "name": "startTimestamp", "type": "uint256"},
+            {"internalType": "uint256", "name": "lockTimestamp", "type": "uint256"},
+            {"internalType": "uint256", "name": "closeTimestamp", "type": "uint256"},
+            {"internalType": "int256", "name": "lockPrice", "type": "int256"},
+            {"internalType": "int256", "name": "closePrice", "type": "int256"},
+            {"internalType": "uint256", "name": "lockOracleId", "type": "uint256"},
+            {"internalType": "uint256", "name": "closeOracleId", "type": "uint256"},
+            {"internalType": "uint256", "name": "totalAmount", "type": "uint256"},
+            {"internalType": "uint256", "name": "bullAmount", "type": "uint256"},
+            {"internalType": "uint256", "name": "bearAmount", "type": "uint256"},
+            {"internalType": "uint256", "name": "rewardBaseCalAmount", "type": "uint256"},
+            {"internalType": "uint256", "name": "rewardAmount", "type": "uint256"},
+            {"internalType": "bool", "name": "oracleCalled", "type": "bool"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
+
 
 # ==========================================
-# 1. DATA GENERATOR (Simulating BNB Price & Contract Data)
+# 1a. LIVE DATA: Binance OHLCV via ccxt
+# ==========================================
+def fetch_live_ohlcv(symbol='BNB/USDT', timeframe='1m', limit=500):
+    """
+    Fetch real-time OHLCV candle data from Binance using ccxt.
+
+    Args:
+        symbol: Trading pair (default: 'BNB/USDT').
+        timeframe: Candle interval (default: '1m' for 1-minute candles).
+        limit: Number of candles to fetch (default: 500, max 1000).
+
+    Returns:
+        DataFrame with columns: Timestamp, Open, High, Low, Close, Volume.
+
+    Raises:
+        ImportError: If ccxt is not installed.
+        Exception: If the API request fails (falls back gracefully).
+    """
+    import ccxt
+
+    exchange = ccxt.binance({'enableRateLimit': True})
+    ohlcv = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
+
+    df = pd.DataFrame(ohlcv, columns=['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
+    df['Timestamp'] = pd.to_datetime(df['Timestamp'], unit='ms')
+    df.set_index('Timestamp', inplace=True)
+
+    return df
+
+
+# ==========================================
+# 1b. LIVE DATA: PancakeSwap Contract via Web3
+# ==========================================
+def fetch_contract_data(rpc_url='https://bsc-dataseed1.binance.org/'):
+    """
+    Fetch currentEpoch, lockPrice, bullAmount, and bearAmount from the
+    PancakeSwap Prediction V2 Smart Contract on BSC.
+
+    Args:
+        rpc_url: BSC RPC endpoint URL. Public endpoints:
+            - https://bsc-dataseed1.binance.org/
+            - https://bsc-dataseed2.binance.org/
+            - https://bsc-dataseed3.binance.org/
+
+    Returns:
+        Dict with keys: epoch, lock_price, bull_amount, bear_amount,
+        total_amount, bull_payout, bear_payout.
+
+    Raises:
+        ImportError: If web3 is not installed.
+        Exception: If the RPC call fails.
+    """
+    from web3 import Web3
+
+    w3 = Web3(Web3.HTTPProvider(rpc_url))
+
+    contract = w3.eth.contract(
+        address=Web3.to_checksum_address(PANCAKE_PREDICTION_ADDRESS),
+        abi=PREDICTION_ABI
+    )
+
+    epoch = contract.functions.currentEpoch().call()
+    round_data = contract.functions.rounds(epoch).call()
+
+    # round_data fields: epoch, startTs, lockTs, closeTs, lockPrice, closePrice,
+    #   lockOracleId, closeOracleId, totalAmount, bullAmount, bearAmount,
+    #   rewardBaseCalAmount, rewardAmount, oracleCalled
+    total_amount = round_data[8]
+    bull_amount = round_data[9]
+    bear_amount = round_data[10]
+    lock_price = round_data[4]
+
+    # Calculate payouts (avoid division by zero)
+    if bull_amount > 0:
+        bull_payout = total_amount / bull_amount
+    else:
+        bull_payout = 1.0
+
+    if bear_amount > 0:
+        bear_payout = total_amount / bear_amount
+    else:
+        bear_payout = 1.0
+
+    return {
+        'epoch': epoch,
+        'lock_price': lock_price / 1e8,  # Oracle price in 8 decimals
+        'bull_amount': bull_amount / 1e18,  # BNB in wei
+        'bear_amount': bear_amount / 1e18,
+        'total_amount': total_amount / 1e18,
+        'bull_payout': bull_payout,
+        'bear_payout': bear_payout,
+    }
+
+
+# ==========================================
+# 1c. COMBINED LIVE DATA PIPELINE
+# ==========================================
+def fetch_live_market_data(symbol='BNB/USDT', timeframe='1m', limit=500,
+                           rpc_url='https://bsc-dataseed1.binance.org/',
+                           use_contract=True):
+    """
+    Fetch real-time market data combining Binance OHLCV and PancakeSwap contract data.
+
+    Fetches OHLCV candles from Binance via ccxt, calculates RSI, and optionally
+    fetches Bull/Bear pool data from the PancakeSwap smart contract via Web3.
+    If contract data is unavailable, approximates sentiment from price momentum.
+
+    Args:
+        symbol: Binance trading pair (default: 'BNB/USDT').
+        timeframe: Candle interval (default: '1m').
+        limit: Number of candles (default: 500).
+        rpc_url: BSC RPC endpoint for contract calls.
+        use_contract: Whether to fetch on-chain contract data (default: True).
+
+    Returns:
+        Tuple of (market_df, contract_info) where market_df has columns
+        [Close, Volume, Bull_Payout, Bear_Payout, RSI] and contract_info
+        is a dict with epoch/payout data (or None if contract fetch is skipped).
+    """
+    # 1. Fetch Binance OHLCV data
+    print(f'>>> Fetching {limit} {timeframe} candles for {symbol} from Binance...')
+    ohlcv_df = fetch_live_ohlcv(symbol=symbol, timeframe=timeframe, limit=limit)
+    print(f'    Received {len(ohlcv_df)} candles, latest: {ohlcv_df.index[-1]}')
+
+    # 2. Fetch contract data (optional)
+    contract_info = None
+    bull_payout = 1.95  # Default
+    bear_payout = 1.95
+
+    if use_contract:
+        try:
+            print(f'>>> Fetching PancakeSwap contract data from BSC...')
+            contract_info = fetch_contract_data(rpc_url=rpc_url)
+            bull_payout = contract_info['bull_payout']
+            bear_payout = contract_info['bear_payout']
+            print(f'    Epoch: {contract_info["epoch"]}, '
+                  f'Bull Pool: {contract_info["bull_amount"]:.2f} BNB, '
+                  f'Bear Pool: {contract_info["bear_amount"]:.2f} BNB')
+            print(f'    Bull Payout: {bull_payout:.2f}x, Bear Payout: {bear_payout:.2f}x')
+        except Exception as e:
+            print(f'    WARNING: Contract fetch failed ({e}). Using default payouts.')
+
+    # 3. Build feature DataFrame
+    df = pd.DataFrame({
+        'Close': ohlcv_df['Close'].values,
+        'Volume': ohlcv_df['Volume'].values,
+    })
+
+    # Approximate per-candle pool sentiment from price momentum
+    # (In production, you'd store per-round contract snapshots)
+    price_changes = df['Close'].diff().fillna(0)
+    sentiment = 1.8 - (price_changes * 0.01)
+    df['Bull_Payout'] = np.clip(sentiment, 1.1, 3.0)
+    df['Bear_Payout'] = 4.0 - df['Bull_Payout']
+
+    # Override last row with actual contract payouts if available
+    if contract_info is not None:
+        df.loc[df.index[-1], 'Bull_Payout'] = bull_payout
+        df.loc[df.index[-1], 'Bear_Payout'] = bear_payout
+
+    # 4. Calculate RSI (14-period)
+    delta = df['Close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+    rs = gain / loss.replace(0, np.finfo(float).eps)
+    df['RSI'] = 100 - (100 / (1 + rs))
+    df = df.fillna(50)
+
+    print(f'>>> Market data ready: {df.shape[0]} rows, {list(df.columns)}')
+
+    return df, contract_info
+
+
+# ==========================================
+# 1d. DATA GENERATOR (Simulating BNB Price & Contract Data)
 # ==========================================
 def generate_market_data(n_minutes=10000):
     """
