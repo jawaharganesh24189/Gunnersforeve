@@ -57,9 +57,14 @@ from .pancake_predictor import (
     build_distilled_model,
     trade_logic,
     run_prediction_pipeline,
+    fetch_live_ohlcv,
+    fetch_contract_data,
+    fetch_live_market_data,
     SEQ_LENGTH,
     PREDICT_AHEAD,
-    FEATURES
+    FEATURES,
+    PANCAKE_PREDICTION_ADDRESS,
+    PREDICTION_ABI
 )
 
 __version__ = '1.0.0'
@@ -100,7 +105,12 @@ __all__ = [
     'build_distilled_model',
     'trade_logic',
     'run_prediction_pipeline',
+    'fetch_live_ohlcv',
+    'fetch_contract_data',
+    'fetch_live_market_data',
     'SEQ_LENGTH',
     'PREDICT_AHEAD',
-    'FEATURES'
+    'FEATURES',
+    'PANCAKE_PREDICTION_ADDRESS',
+    'PREDICTION_ABI'
 ]
