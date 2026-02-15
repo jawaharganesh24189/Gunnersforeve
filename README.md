@@ -4,9 +4,9 @@ A Keras-based Transformer model that generates passing tactics from the backline
 
 **🆕 NEW: Enhanced notebook with multi-league support, player stats, and match history!** See [enhanced_tactics_transformer_notebook.ipynb](enhanced_tactics_transformer_notebook.ipynb)
 
-**🆕 NEW: PancakeSwap Prediction Bot** — BiLSTM + Attention model for BNB 5-minute price prediction. See [pancake_predictor_notebook.ipynb](pancake_predictor_notebook.ipynb)
+**🆕 NEW: PancakeSwap Prediction Bot** — BiLSTM + Attention model for BNB 5-minute price prediction using real-time PancakeSwap DEX data. See [pancake_predictor_notebook.ipynb](pancake_predictor_notebook.ipynb)
 
-**🆕 NEW: PancakeSwap Live Data Notebook** — Self-contained notebook with real-time Binance OHLCV + PancakeSwap Web3 contract data. See [pancake_predictor_live_notebook.ipynb](pancake_predictor_live_notebook.ipynb)
+**🆕 NEW: PancakeSwap Live Data Notebook** — Self-contained notebook with real-time PancakeSwap DEX OHLCV + Web3 contract data. See [pancake_predictor_live_notebook.ipynb](pancake_predictor_live_notebook.ipynb)
 
 ## Overview
 
@@ -103,18 +103,19 @@ Or use the Python module directly:
 
 ```python
 from src.pancake_predictor import (
-    generate_market_data,
+    fetch_live_market_data,
+    fetch_pancakeswap_ohlcv,
     create_sequences,
     build_pancake_model,
     trade_logic,
     run_prediction_pipeline
 )
 
-# Run the full pipeline (generate data, train, predict)
-model, history, result = run_prediction_pipeline()
+# Run the full pipeline (fetch real-time data, train, predict)
+model, history, result = run_prediction_pipeline(limit=500)
 
 # Or step by step:
-market_data = generate_market_data(n_minutes=10000)
+market_data, contract_info = fetch_live_market_data(limit=500)
 X, y, scaler = create_sequences(market_data)
 model = build_pancake_model()
 decision, prob, ev_bull, ev_bear = trade_logic(
@@ -125,17 +126,17 @@ decision, prob, ev_bull, ev_bear = trade_logic(
 ### Option 2b: PancakeSwap Live Data Notebook (Self-Contained)
 
 This notebook runs as a **single standalone file** — no external dependencies on `src/` modules.
-It fetches real-time BNB/USDT data from Binance and PancakeSwap contract data via Web3:
+It fetches real-time BNB/USDT data from PancakeSwap DEX and Prediction contract via Web3:
 
 ```bash
 jupyter notebook pancake_predictor_live_notebook.ipynb
 ```
 
 Features:
-- Installs all dependencies automatically (tensorflow, ccxt, web3, etc.)
-- Fetches real OHLCV candles from Binance API
-- Reads PancakeSwap smart contract (currentEpoch, lockPrice, bullAmount, bearAmount)
-- Falls back to simulated data if APIs are unreachable
+- Installs all dependencies automatically (tensorflow, web3, etc.)
+- Fetches real OHLCV data from PancakeSwap DEX via Web3
+- Reads PancakeSwap Prediction smart contract (currentEpoch, lockPrice, bullAmount, bearAmount)
+- Uses only real-time on-chain data (no simulation, no Binance)
 - Both models (Base + Robust), comparison, ensemble, distillation, backtesting
 
 ### Option 3: Python Modules
