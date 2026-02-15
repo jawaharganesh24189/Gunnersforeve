@@ -40,6 +40,14 @@ FEATURES = 5          # [Close, Volume, RSI, Bull_Ratio, Bear_Ratio]
 # PancakeSwap Prediction V2 Contract (BSC Mainnet)
 PANCAKE_PREDICTION_ADDRESS = '0x18B2A687610328590Bc8F2e5fEdDe3b582A49cdA'
 
+# PancakeSwap V2 Router and Factory (BSC Mainnet)
+PANCAKE_ROUTER_ADDRESS = '0x10ED43C718714eb63d5aA57B78B54704E256024E'
+PANCAKE_FACTORY_ADDRESS = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73'
+
+# BNB and USDT token addresses on BSC
+WBNB_ADDRESS = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'
+USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955'
+
 # Minimal ABI for the PancakeSwap Prediction contract (read-only)
 PREDICTION_ABI = [
     {
@@ -73,35 +81,251 @@ PREDICTION_ABI = [
     }
 ]
 
+# Minimal ABI for PancakeSwap V2 Pair (for getting reserves and price)
+PAIR_ABI = [
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "getReserves",
+        "outputs": [
+            {"internalType": "uint112", "name": "_reserve0", "type": "uint112"},
+            {"internalType": "uint112", "name": "_reserve1", "type": "uint112"},
+            {"internalType": "uint32", "name": "_blockTimestampLast", "type": "uint32"}
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "token0",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "token1",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
+
+# Minimal ABI for PancakeSwap V2 Factory (to get pair address)
+FACTORY_ABI = [
+    {
+        "constant": True,
+        "inputs": [
+            {"internalType": "address", "name": "", "type": "address"},
+            {"internalType": "address", "name": "", "type": "address"}
+        ],
+        "name": "getPair",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
+
 
 # ==========================================
-# 1a. LIVE DATA: Binance OHLCV via ccxt
+# 1a. LIVE DATA: PancakeSwap DEX Price via Web3
 # ==========================================
-def fetch_live_ohlcv(symbol='BNB/USDT', timeframe='1m', limit=500):
+def fetch_pancakeswap_price(rpc_url='https://bsc-dataseed1.binance.org/'):
     """
-    Fetch real-time OHLCV candle data from Binance using ccxt.
+    Fetch real-time BNB/USDT price from PancakeSwap V2 liquidity pool.
+
+    Queries the PancakeSwap BNB/USDT pair contract to get current reserves
+    and calculates the spot price from the constant product formula (x * y = k).
 
     Args:
-        symbol: Trading pair (default: 'BNB/USDT').
+        rpc_url: BSC RPC endpoint URL.
+
+    Returns:
+        Dict with keys: price (BNB in USDT), reserve_bnb, reserve_usdt, timestamp.
+
+    Raises:
+        Exception: If the RPC call fails.
+    """
+    from web3 import Web3
+    import time
+
+    w3 = Web3(Web3.HTTPProvider(rpc_url))
+    
+    # Get the pair address for WBNB/USDT
+    factory = w3.eth.contract(
+        address=Web3.to_checksum_address(PANCAKE_FACTORY_ADDRESS),
+        abi=FACTORY_ABI
+    )
+    
+    pair_address = factory.functions.getPair(
+        Web3.to_checksum_address(WBNB_ADDRESS),
+        Web3.to_checksum_address(USDT_ADDRESS)
+    ).call()
+    
+    # Get reserves from the pair contract
+    pair = w3.eth.contract(
+        address=Web3.to_checksum_address(pair_address),
+        abi=PAIR_ABI
+    )
+    
+    reserves = pair.functions.getReserves().call()
+    token0 = pair.functions.token0().call()
+    
+    # Determine which reserve is BNB and which is USDT
+    if token0.lower() == WBNB_ADDRESS.lower():
+        reserve_bnb = reserves[0] / 1e18  # WBNB has 18 decimals
+        reserve_usdt = reserves[1] / 1e18  # USDT has 18 decimals
+    else:
+        reserve_bnb = reserves[1] / 1e18
+        reserve_usdt = reserves[0] / 1e18
+    
+    # Calculate price: USDT per BNB
+    price = reserve_usdt / reserve_bnb if reserve_bnb > 0 else 0
+    
+    return {
+        'price': price,
+        'reserve_bnb': reserve_bnb,
+        'reserve_usdt': reserve_usdt,
+        'timestamp': time.time()
+    }
+
+
+def fetch_pancakeswap_ohlcv(timeframe='1m', limit=500, rpc_url='https://bsc-dataseed1.binance.org/'):
+    """
+    Fetch historical OHLCV data by sampling PancakeSwap prices at regular intervals.
+    
+    This function builds OHLCV candles by:
+    1. Fetching historical block data from BSC
+    2. Querying PancakeSwap pair reserves at each block
+    3. Calculating prices and constructing OHLCV candles
+    
+    Note: This samples prices from chain state. For production, consider using
+    The Graph Protocol subgraph for more efficient historical data access.
+
+    Args:
         timeframe: Candle interval (default: '1m' for 1-minute candles).
-        limit: Number of candles to fetch (default: 500, max 1000).
+        limit: Number of candles to fetch (default: 500).
+        rpc_url: BSC RPC endpoint URL.
 
     Returns:
         DataFrame with columns: Timestamp, Open, High, Low, Close, Volume.
-
-    Raises:
-        ImportError: If ccxt is not installed.
-        Exception: If the API request fails (falls back gracefully).
     """
-    import ccxt
-
-    exchange = ccxt.binance({'enableRateLimit': True})
-    ohlcv = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
-
-    df = pd.DataFrame(ohlcv, columns=['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
-    df['Timestamp'] = pd.to_datetime(df['Timestamp'], unit='ms')
-    df.set_index('Timestamp', inplace=True)
-
+    from web3 import Web3
+    import time
+    
+    w3 = Web3(Web3.HTTPProvider(rpc_url))
+    
+    # Get the pair address
+    factory = w3.eth.contract(
+        address=Web3.to_checksum_address(PANCAKE_FACTORY_ADDRESS),
+        abi=FACTORY_ABI
+    )
+    
+    pair_address = factory.functions.getPair(
+        Web3.to_checksum_address(WBNB_ADDRESS),
+        Web3.to_checksum_address(USDT_ADDRESS)
+    ).call()
+    
+    pair = w3.eth.contract(
+        address=Web3.to_checksum_address(pair_address),
+        abi=PAIR_ABI
+    )
+    
+    # Determine token order
+    token0 = pair.functions.token0().call()
+    is_bnb_token0 = token0.lower() == WBNB_ADDRESS.lower()
+    
+    # BSC block time is ~3 seconds, so for 1-minute candles we need ~20 blocks per candle
+    timeframe_seconds = {'1m': 60, '5m': 300, '15m': 900, '1h': 3600}.get(timeframe, 60)
+    blocks_per_candle = max(1, int(timeframe_seconds / 3))
+    
+    current_block = w3.eth.block_number
+    start_block = current_block - (blocks_per_candle * limit)
+    
+    print(f'>>> Fetching {limit} {timeframe} candles from PancakeSwap...')
+    print(f'    Sampling blocks {start_block} to {current_block}')
+    
+    candles = []
+    prices_in_window = []
+    volume_in_window = 0
+    window_start_time = None
+    last_reserve_bnb = None
+    
+    for block_num in range(start_block, current_block + 1, max(1, blocks_per_candle // 20)):
+        try:
+            # Get block timestamp
+            block = w3.eth.get_block(block_num)
+            block_time = pd.to_datetime(block['timestamp'], unit='s')
+            
+            # Get reserves at this block
+            reserves = pair.functions.getReserves().call(block_identifier=block_num)
+            
+            # Calculate price
+            if is_bnb_token0:
+                reserve_bnb = reserves[0] / 1e18
+                reserve_usdt = reserves[1] / 1e18
+            else:
+                reserve_bnb = reserves[1] / 1e18
+                reserve_usdt = reserves[0] / 1e18
+            
+            price = reserve_usdt / reserve_bnb if reserve_bnb > 0 else 0
+            
+            # Calculate volume (change in reserves)
+            if last_reserve_bnb is not None:
+                volume = abs(reserve_bnb - last_reserve_bnb)
+            else:
+                volume = 0
+            last_reserve_bnb = reserve_bnb
+            
+            # Initialize window if needed
+            if window_start_time is None:
+                window_start_time = block_time
+            
+            # Check if we need to close this candle
+            if (block_time - window_start_time).total_seconds() >= timeframe_seconds:
+                if prices_in_window:
+                    candles.append({
+                        'Timestamp': window_start_time,
+                        'Open': prices_in_window[0],
+                        'High': max(prices_in_window),
+                        'Low': min(prices_in_window),
+                        'Close': prices_in_window[-1],
+                        'Volume': volume_in_window
+                    })
+                
+                # Start new window
+                prices_in_window = [price]
+                volume_in_window = volume
+                window_start_time = block_time
+            else:
+                prices_in_window.append(price)
+                volume_in_window += volume
+                
+        except Exception as e:
+            # Skip blocks that fail (might be too old or API limits)
+            continue
+    
+    # Close last candle
+    if prices_in_window:
+        candles.append({
+            'Timestamp': window_start_time,
+            'Open': prices_in_window[0],
+            'High': max(prices_in_window),
+            'Low': min(prices_in_window),
+            'Close': prices_in_window[-1],
+            'Volume': volume_in_window
+        })
+    
+    df = pd.DataFrame(candles)
+    if len(df) > 0:
+        df.set_index('Timestamp', inplace=True)
+        # Limit to requested number of candles
+        df = df.tail(limit)
+    
+    print(f'    Received {len(df)} candles from PancakeSwap DEX')
+    
     return df
 
 
@@ -172,41 +396,43 @@ def fetch_contract_data(rpc_url='https://bsc-dataseed1.binance.org/'):
 # ==========================================
 # 1c. COMBINED LIVE DATA PIPELINE
 # ==========================================
-def fetch_live_market_data(symbol='BNB/USDT', timeframe='1m', limit=500,
+def fetch_live_market_data(timeframe='1m', limit=500,
                            rpc_url='https://bsc-dataseed1.binance.org/',
                            use_contract=True):
     """
-    Fetch real-time market data combining Binance OHLCV and PancakeSwap contract data.
+    Fetch real-time market data from PancakeSwap DEX and Prediction contract.
 
-    Fetches OHLCV candles from Binance via ccxt, calculates RSI, and optionally
-    fetches Bull/Bear pool data from the PancakeSwap smart contract via Web3.
-    If contract data is unavailable, approximates sentiment from price momentum.
+    Fetches OHLCV candles from PancakeSwap DEX via Web3, calculates RSI, and
+    fetches Bull/Bear pool data from the PancakeSwap Prediction smart contract.
 
     Args:
-        symbol: Binance trading pair (default: 'BNB/USDT').
         timeframe: Candle interval (default: '1m').
         limit: Number of candles (default: 500).
         rpc_url: BSC RPC endpoint for contract calls.
-        use_contract: Whether to fetch on-chain contract data (default: True).
+        use_contract: Whether to fetch on-chain prediction contract data (default: True).
 
     Returns:
         Tuple of (market_df, contract_info) where market_df has columns
         [Close, Volume, Bull_Payout, Bear_Payout, RSI] and contract_info
         is a dict with epoch/payout data (or None if contract fetch is skipped).
     """
-    # 1. Fetch Binance OHLCV data
-    print(f'>>> Fetching {limit} {timeframe} candles for {symbol} from Binance...')
-    ohlcv_df = fetch_live_ohlcv(symbol=symbol, timeframe=timeframe, limit=limit)
+    # 1. Fetch PancakeSwap DEX OHLCV data
+    print(f'>>> Fetching {limit} {timeframe} candles from PancakeSwap DEX...')
+    ohlcv_df = fetch_pancakeswap_ohlcv(timeframe=timeframe, limit=limit, rpc_url=rpc_url)
+    
+    if len(ohlcv_df) == 0:
+        raise Exception("Failed to fetch OHLCV data from PancakeSwap. Please check RPC connection.")
+    
     print(f'    Received {len(ohlcv_df)} candles, latest: {ohlcv_df.index[-1]}')
 
-    # 2. Fetch contract data (optional)
+    # 2. Fetch Prediction contract data
     contract_info = None
     bull_payout = 1.95  # Default
     bear_payout = 1.95
 
     if use_contract:
         try:
-            print(f'>>> Fetching PancakeSwap contract data from BSC...')
+            print(f'>>> Fetching PancakeSwap Prediction contract data from BSC...')
             contract_info = fetch_contract_data(rpc_url=rpc_url)
             bull_payout = contract_info['bull_payout']
             bear_payout = contract_info['bear_payout']
@@ -215,7 +441,7 @@ def fetch_live_market_data(symbol='BNB/USDT', timeframe='1m', limit=500,
                   f'Bear Pool: {contract_info["bear_amount"]:.2f} BNB')
             print(f'    Bull Payout: {bull_payout:.2f}x, Bear Payout: {bear_payout:.2f}x')
         except Exception as e:
-            print(f'    WARNING: Contract fetch failed ({e}). Using default payouts.')
+            print(f'    WARNING: Prediction contract fetch failed ({e}). Using default payouts.')
 
     # 3. Build feature DataFrame
     df = pd.DataFrame({
@@ -223,10 +449,7 @@ def fetch_live_market_data(symbol='BNB/USDT', timeframe='1m', limit=500,
         'Volume': ohlcv_df['Volume'].values,
     })
 
-    # Approximate per-candle pool sentiment from price momentum.
-    # Live price changes are in USD (e.g. ±0.5 to ±5), so we use a
-    # smaller scale factor (0.01) compared to simulated data (0.1)
-    # to keep the sentiment ratio in a realistic 1.1–3.0 payout range.
+    # Calculate per-candle pool sentiment from price momentum
     price_changes = df['Close'].diff().fillna(0)
     sentiment = 1.8 - (price_changes * 0.01)
     df['Bull_Payout'] = np.clip(sentiment, 1.1, 3.0)
@@ -248,59 +471,6 @@ def fetch_live_market_data(symbol='BNB/USDT', timeframe='1m', limit=500,
     print(f'>>> Market data ready: {df.shape[0]} rows, {list(df.columns)}')
 
     return df, contract_info
-
-
-# ==========================================
-# 1d. DATA GENERATOR (Simulating BNB Price & Contract Data)
-# ==========================================
-def generate_market_data(n_minutes=10000):
-    """
-    Simulates BNB price movement and Prediction Pool Sentiment.
-
-    Generates synthetic 1-minute OHLCV data for BNB/USDT along with
-    PancakeSwap pool sentiment (Bull/Bear payout multipliers).
-
-    Args:
-        n_minutes: Number of minutes of data to generate.
-
-    Returns:
-        DataFrame with columns: Close, Volume, Bull_Payout, Bear_Payout, RSI
-    """
-    prices = [300.0]
-    volumes = [1000.0]
-    bull_ratios = [1.8]  # Payout multiplier
-
-    for _ in range(n_minutes):
-        # Random Walk for Price
-        change = np.random.normal(0, 1.5)  # Volatility
-        new_price = prices[-1] + change
-        prices.append(new_price)
-
-        # Volume spikes on large moves
-        vol = np.random.normal(1000, 200) + (abs(change) * 100)
-        volumes.append(vol)
-
-        # Pool Sentiment (Crowd usually chases the trend)
-        # If price went up, crowd goes Bull (lowering Bull payout)
-        sentiment = 1.8 - (change * 0.1)
-        bull_ratios.append(np.clip(sentiment, 1.1, 3.0))
-
-    df = pd.DataFrame({
-        'Close': prices,
-        'Volume': volumes,
-        'Bull_Payout': bull_ratios,
-        'Bear_Payout': [4.0 - x for x in bull_ratios]  # Approximate inverse
-    })
-
-    # Calculate RSI (Technical Indicator)
-    delta = df['Close'].diff()
-    gain = (delta.where(delta > 0, 0)).rolling(14).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-    rs = gain / loss.replace(0, np.finfo(float).eps)
-    df['RSI'] = 100 - (100 / (1 + rs))
-    df = df.fillna(50)
-
-    return df
 
 
 # ==========================================
@@ -624,23 +794,33 @@ def trade_logic(model, current_sequence, bull_payout, bear_payout,
     return decision, prob_bull, ev_bull, ev_bear
 
 
-def run_prediction_pipeline(n_minutes=10000, epochs=10, batch_size=32):
+def run_prediction_pipeline(limit=500, epochs=10, batch_size=32, 
+                           rpc_url='https://bsc-dataseed1.binance.org/',
+                           timeframe='1m'):
     """
-    Run the full prediction pipeline: generate data, train model, simulate trade.
+    Run the full prediction pipeline: fetch real-time data, train model, make prediction.
 
-    This is the end-to-end CRISP-DM workflow for the PancakeSwap Prediction Bot.
+    This is the end-to-end CRISP-DM workflow for the PancakeSwap Prediction Bot
+    using only real-time data from PancakeSwap DEX and Prediction contract.
 
     Args:
-        n_minutes: Number of minutes of simulated market data.
-        epochs: Number of training epochs.
-        batch_size: Training batch size.
+        limit: Number of candles to fetch from PancakeSwap (default: 500).
+        epochs: Number of training epochs (default: 10).
+        batch_size: Training batch size (default: 32).
+        rpc_url: BSC RPC endpoint URL.
+        timeframe: Candle interval (default: '1m').
 
     Returns:
         Tuple of (model, history, trade_result) where trade_result is
         a dict with keys: action, confidence, ev_bull, ev_bear.
     """
-    print(">>> FETCHING ON-CHAIN DATA (Simulated)...")
-    market_data = generate_market_data(n_minutes)
+    print(">>> FETCHING REAL-TIME DATA FROM PANCAKESWAP...")
+    market_data, contract_info = fetch_live_market_data(
+        timeframe=timeframe, 
+        limit=limit, 
+        rpc_url=rpc_url,
+        use_contract=True
+    )
 
     print(">>> PREPARING SEQUENCES...")
     X, y, scaler = create_sequences(market_data)
@@ -651,6 +831,7 @@ def run_prediction_pipeline(n_minutes=10000, epochs=10, batch_size=32):
     print(f"Training Shapes: X={X_train.shape}, y={y_train.shape}")
 
     # Build and train model
+    print(">>> TRAINING MODEL...")
     model = build_pancake_model()
     history = model.fit(
         X_train, y_train,
@@ -660,11 +841,17 @@ def run_prediction_pipeline(n_minutes=10000, epochs=10, batch_size=32):
         verbose=1
     )
 
-    # Simulate a live round
-    print("\n>>> LIVE ROUND PREDICTION ---")
+    # Make prediction for current round
+    print("\n>>> CURRENT ROUND PREDICTION ---")
     latest_data = X_test[-1]
-    current_bull_payout = 1.95
-    current_bear_payout = 1.95
+    
+    # Get current payouts from contract
+    if contract_info is not None:
+        current_bull_payout = contract_info['bull_payout']
+        current_bear_payout = contract_info['bear_payout']
+    else:
+        current_bull_payout = 1.95
+        current_bear_payout = 1.95
 
     action, conf, ev_up, ev_down = trade_logic(
         model, latest_data, current_bull_payout, current_bear_payout
