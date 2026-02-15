@@ -49,7 +49,8 @@ from .match_history import (
 )
 
 from .pancake_predictor import (
-    generate_market_data,
+    fetch_pancakeswap_price,
+    fetch_pancakeswap_ohlcv,
     create_sequences,
     build_pancake_model,
     build_robust_pancake_model,
@@ -57,14 +58,19 @@ from .pancake_predictor import (
     build_distilled_model,
     trade_logic,
     run_prediction_pipeline,
-    fetch_live_ohlcv,
     fetch_contract_data,
     fetch_live_market_data,
     SEQ_LENGTH,
     PREDICT_AHEAD,
     FEATURES,
     PANCAKE_PREDICTION_ADDRESS,
-    PREDICTION_ABI
+    PANCAKE_ROUTER_ADDRESS,
+    PANCAKE_FACTORY_ADDRESS,
+    WBNB_ADDRESS,
+    USDT_ADDRESS,
+    PREDICTION_ABI,
+    PAIR_ABI,
+    FACTORY_ABI
 )
 
 __version__ = '1.0.0'
@@ -97,7 +103,8 @@ __all__ = [
     'MatchDataLoader',
     'create_sample_match_data',
     'load_match_history',
-    'generate_market_data',
+    'fetch_pancakeswap_price',
+    'fetch_pancakeswap_ohlcv',
     'create_sequences',
     'build_pancake_model',
     'build_robust_pancake_model',
@@ -105,12 +112,17 @@ __all__ = [
     'build_distilled_model',
     'trade_logic',
     'run_prediction_pipeline',
-    'fetch_live_ohlcv',
     'fetch_contract_data',
     'fetch_live_market_data',
     'SEQ_LENGTH',
     'PREDICT_AHEAD',
     'FEATURES',
     'PANCAKE_PREDICTION_ADDRESS',
-    'PREDICTION_ABI'
+    'PANCAKE_ROUTER_ADDRESS',
+    'PANCAKE_FACTORY_ADDRESS',
+    'WBNB_ADDRESS',
+    'USDT_ADDRESS',
+    'PREDICTION_ABI',
+    'PAIR_ABI',
+    'FACTORY_ABI'
 ]
