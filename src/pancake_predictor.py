@@ -174,9 +174,10 @@ def fetch_pancakeswap_price(rpc_url='https://bsc-dataseed1.binance.org/'):
     token0 = pair.functions.token0().call()
     
     # Determine which reserve is BNB and which is USDT
+    # Note: BSC-USDT uses 18 decimals (unlike Ethereum USDT which uses 6)
     if token0.lower() == WBNB_ADDRESS.lower():
         reserve_bnb = reserves[0] / 1e18  # WBNB has 18 decimals
-        reserve_usdt = reserves[1] / 1e18  # USDT has 18 decimals
+        reserve_usdt = reserves[1] / 1e18  # BSC-USDT has 18 decimals
     else:
         reserve_bnb = reserves[1] / 1e18
         reserve_usdt = reserves[0] / 1e18
@@ -201,8 +202,14 @@ def fetch_pancakeswap_ohlcv(timeframe='1m', limit=500, rpc_url='https://bsc-data
     2. Querying PancakeSwap pair reserves at each block
     3. Calculating prices and constructing OHLCV candles
     
-    Note: This samples prices from chain state. For production, consider using
-    The Graph Protocol subgraph for more efficient historical data access.
+    WARNING: This method queries blocks sequentially and can be slow for large datasets.
+    For production use, consider:
+    - Using The Graph Protocol PancakeSwap subgraph for efficient historical queries
+    - Implementing batch RPC requests to query multiple blocks at once
+    - Caching results to avoid repeated queries
+    
+    Note: The volume calculation is approximate based on reserve changes and may not
+    reflect actual trading volume accurately. For precise volume data, use The Graph.
 
     Args:
         timeframe: Candle interval (default: '1m' for 1-minute candles).
@@ -252,6 +259,7 @@ def fetch_pancakeswap_ohlcv(timeframe='1m', limit=500, rpc_url='https://bsc-data
     volume_in_window = 0
     window_start_time = None
     last_reserve_bnb = None
+    failed_blocks = 0
     
     for block_num in range(start_block, current_block + 1, max(1, blocks_per_candle // 20)):
         try:
@@ -263,6 +271,7 @@ def fetch_pancakeswap_ohlcv(timeframe='1m', limit=500, rpc_url='https://bsc-data
             reserves = pair.functions.getReserves().call(block_identifier=block_num)
             
             # Calculate price
+            # Note: BSC-USDT uses 18 decimals (unlike Ethereum USDT which uses 6)
             if is_bnb_token0:
                 reserve_bnb = reserves[0] / 1e18
                 reserve_usdt = reserves[1] / 1e18
@@ -272,7 +281,8 @@ def fetch_pancakeswap_ohlcv(timeframe='1m', limit=500, rpc_url='https://bsc-data
             
             price = reserve_usdt / reserve_bnb if reserve_bnb > 0 else 0
             
-            # Calculate volume (change in reserves)
+            # Calculate approximate volume (change in reserves)
+            # Note: This is a rough approximation and doesn't represent actual swap volume
             if last_reserve_bnb is not None:
                 volume = abs(reserve_bnb - last_reserve_bnb)
             else:
@@ -304,7 +314,10 @@ def fetch_pancakeswap_ohlcv(timeframe='1m', limit=500, rpc_url='https://bsc-data
                 volume_in_window += volume
                 
         except Exception as e:
-            # Skip blocks that fail (might be too old or API limits)
+            # Skip blocks that fail (might be too old, pruned, or API rate limits)
+            failed_blocks += 1
+            if failed_blocks > 50:  # Warn if too many failures
+                print(f'    WARNING: {failed_blocks} blocks failed to fetch. Data may be incomplete.')
             continue
     
     # Close last candle
